@@ -125,7 +125,7 @@ CREATE TABLE usuarios (
     senha_hash          VARCHAR(255) NOT NULL,
     nome                VARCHAR(150) NOT NULL,
     foto_perfil_url     VARCHAR(500),
-    documento           VARCHAR(20),                 -- CPF ou CNPJ (documento do prestador)
+    documento           VARCHAR(14),                 -- CPF ou CNPJ (documento do prestador)
     
     -- Status e Verificação
     status_verificacao  status_verificacao DEFAULT 'COMPLETO',
@@ -178,7 +178,7 @@ CREATE TABLE enderecos (
     id            SERIAL PRIMARY KEY,
     usuario_id    INT NOT NULL,
     apelido       VARCHAR(50) NOT NULL,       -- Casa, Trabalho, etc.
-    cep           VARCHAR(9) NOT NULL,
+    cep           VARCHAR(8) NOT NULL,
     logradouro    VARCHAR(200) NOT NULL,
     numero        VARCHAR(20) NOT NULL,
     complemento   VARCHAR(100),
@@ -267,6 +267,30 @@ CREATE TABLE documentos_prestador (
 
 CREATE INDEX idx_documentos_prestador_id     ON documentos_prestador(prestador_id);
 CREATE INDEX idx_documentos_prestador_status ON documentos_prestador(status);
+
+-- ============================================================================
+-- DOCUMENTOS CLIENTE (Verificação Opcional)
+-- ============================================================================
+
+CREATE TABLE documentos_cliente (
+    id                      SERIAL PRIMARY KEY,
+    cliente_id              INT NOT NULL,
+    tipo_documento          VARCHAR(50) NOT NULL,  -- CPF, COMPROVANTE_ENDERECO, IDENTIDADE
+    arquivo_url             VARCHAR(500) NOT NULL,
+    status status_documento DEFAULT 'PENDENTE',
+    motivo_rejeicao         TEXT,
+
+    -- Auditoria
+    submetido_em  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    analisado_em  TIMESTAMP,
+    analisado_por INT,                   -- ID do admin
+
+    CONSTRAINT fk_documento_cliente FOREIGN KEY(cliente_id) REFERENCES cliente(usuario_id) ON DELETE CASCADE,
+    CONSTRAINT fk_documento_cliente_analisado_por FOREIGN KEY(analisado_por) REFERENCES usuarios(id) ON DELETE SET NULL
+);
+
+CREATE INDEX idx_documentos_cliente_id ON documentos_cliente(cliente_id);
+CREATE INDEX idx_documentos_cliente_status ON documentos_cliente(status);
 
 -- ============================================================================
 -- 4. CATEGORIAS (RAMOS DE ATUAÇÃO)
