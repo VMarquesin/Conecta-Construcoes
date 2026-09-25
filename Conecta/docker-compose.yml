@@ -1,0 +1,37 @@
+﻿version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: monorepo-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+      POSTGRES_DB: monorepo_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - monorepo-network
+
+  # --- Cache Redis ---
+  redis:
+    image: redis:7-alpine
+    container_name: monorepo-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - monorepo-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  monorepo-network:
+    driver: bridge
