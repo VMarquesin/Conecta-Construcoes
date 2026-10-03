@@ -285,13 +285,13 @@ Configurar orquestração integrando o ecossistema existente:
 | **Frontend Dockerfile** | `frontend/Dockerfile` | Node 22 + Nginx Alpine | Concluído (Validado) |
 | **DDD: Domain Isolado** | `Conecta.Domain` | C# .NET 10 | Concluído (Validado) |
 | **DDD: Application** | `Conecta.Application` | C# .NET 10 | Concluído (Validado) |
-| **Escrita / Domínio** | `Conecta.Infrastructure` | EF Core (`Npgsql.EntityFrameworkCore.PostgreSQL`) | A configurar (Fase 2) |
-| **Consultas Otimizadas** | `Conecta.Infrastructure` | Dapper (`Dapper` + `Npgsql`) | A configurar (Fase 2) |
-| **Versionamento Schema** | `Conecta.Infrastructure` | Evolve (`Evolve` + migrations baseadas em `objs/`) | A configurar (Fase 2) |
-| **Scripts Iniciais SQL** | `objs/create.sql` e `objs/schema.sql` | Mapeados para `Database/Migrations/V1_0_0__Initial_Schema.sql` | Especificado no Plano |
-| **Cópia de Scripts SQL** | `Conecta.Infrastructure.csproj` | `<CopyToOutputDirectory>Always</CopyToOutputDirectory>` | A configurar (Fase 2) |
-| **Docs da API** | `Conecta.API` | Swagger UI / OpenAPI v3 | A configurar (Fase 2) |
-| **Healthcheck Postgres** | `docker-compose.yml` | `pg_isready` + `service_healthy` | Concluído (Validado) |
+| **Escrita / Domínio** | `Conecta.Infrastructure` | EF Core (`Npgsql.EntityFrameworkCore.PostgreSQL`) | Concluído (Validado) |
+| **Consultas Otimizadas** | `Conecta.Infrastructure` | Dapper (`Dapper` + `Npgsql`) | Concluído (Validado) |
+| **Versionamento Schema** | `Conecta.Infrastructure` | Evolve (`EvolveDb` + migrations baseadas em `objs/`) | Concluído (Validado) |
+| **Scripts Iniciais SQL** | `objs/create.sql` e `objs/schema.sql` | Mapeados para `Database/Migrations/V1_0_0__Initial_Schema.sql` | Concluído (Validado) |
+| **Cópia de Scripts SQL** | `Conecta.Infrastructure.csproj` | `<CopyToOutputDirectory>Always</CopyToOutputDirectory>` | Concluído (Validado) |
+| **Docs da API** | `Conecta.API` | Swagger UI / OpenAPI v3 | A configurar (Etapa 3) |
+| **Healthcheck Postgres** | `Conecta/docker-compose.yml` | `pg_isready` + `service_healthy` | Concluído (Validado) |
 
 ---
 
