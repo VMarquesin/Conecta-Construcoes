@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="AuditoriaLog.Service/AuditoriaLog.Service.csproj" />
+  <Project Path="Autenticacao.API/Autenticacao.API.csproj" />
+</Solution>
