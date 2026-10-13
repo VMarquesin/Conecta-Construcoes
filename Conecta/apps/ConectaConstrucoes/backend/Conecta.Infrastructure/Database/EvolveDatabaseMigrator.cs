@@ -1,61 +1,30 @@
-using EvolveDb;
+using Conecta.Infrastructure.Data;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Npgsql;
 
 namespace Conecta.Infrastructure.Database;
 
-/// <summary>
-/// Responsável pelo versionamento e aplicação das migrações do banco de dados utilizando EvolveDb.
-/// O Evolve é a única fonte da verdade para o schema do PostgreSQL.
-/// </summary>
-public class EvolveDatabaseMigrator
+/// <summary>Evolve é a única fonte de versionamento do schema. V1/V2 da equipe são preservadas.</summary>
+public class EvolveDatabaseMigrator(IConfiguration configuration, ILogger<EvolveDatabaseMigrator> logger)
 {
-    private readonly string _connectionString;
-    private readonly ILogger<EvolveDatabaseMigrator> _logger;
-
-    public EvolveDatabaseMigrator(IConfiguration configuration, ILogger<EvolveDatabaseMigrator> logger)
-    {
-        _connectionString = configuration.GetConnectionString("DefaultConnection")
-            ?? throw new InvalidOperationException("Connection string 'DefaultConnection' não configurada.");
-        _logger = logger;
-    }
-
-    /// <summary>
-    /// Executa as migrações SQL pendentes encontradas no diretório de migrações.
-    /// </summary>
     public void Migrate()
     {
-        try
+        var caminho = Path.Combine(AppContext.BaseDirectory, "Database", "Migrations");
+        if (!Directory.Exists(caminho)) throw new InvalidOperationException("Scripts Evolve ausentes na publicação.");
+        using var conexao = new NpgsqlConnection(ConfiguracaoBanco.ObterConexao(configuration));
+        conexao.Open();
+        using (var legado = new NpgsqlCommand("SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema=current_schema() AND table_name='__EFMigrationsHistory')", conexao))
+            if ((bool)legado.ExecuteScalar()!)
+                throw new InvalidOperationException("Banco legado de migrations EF detectado. Não misture os históricos. Faça a conciliação/baseline descrita em CON_012.md antes de executar Evolve; nenhum dado foi alterado.");
+        using var consultarSchema = new NpgsqlCommand("SELECT current_schema()", conexao);
+        var schema = (string?)consultarSchema.ExecuteScalar()
+            ?? throw new InvalidOperationException("SearchPath deve selecionar um schema existente.");
+        var evolve = new EvolveDb.Evolve(conexao, mensagem => logger.LogInformation("[Evolve] {Mensagem}", mensagem))
         {
-            var migrationsPath = Path.Combine(AppContext.BaseDirectory, "Database", "Migrations");
-
-            _logger.LogInformation("Iniciando migrações do banco de dados com Evolve...");
-            _logger.LogInformation("Diretório de migrações: {Path}", migrationsPath);
-
-            if (!Directory.Exists(migrationsPath))
-            {
-                _logger.LogWarning("Diretório de migrações não encontrado em {Path}. Criando diretório...", migrationsPath);
-                Directory.CreateDirectory(migrationsPath);
-            }
-
-            using var connection = new NpgsqlConnection(_connectionString);
-
-            var evolve = new EvolveDb.Evolve(connection, msg => _logger.LogInformation("[Evolve] {Message}", msg))
-            {
-                Locations = new[] { migrationsPath },
-                IsEraseDisabled = true,
-                CommandTimeout = 120
-            };
-
-            evolve.Migrate();
-
-            _logger.LogInformation("Migrações do banco de dados aplicadas com sucesso pelo Evolve.");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Falha crítica ao aplicar migrações do banco de dados com Evolve.");
-            throw;
-        }
+            Locations = [caminho], Schemas = [schema], MetadataTableSchema = schema,
+            IsEraseDisabled = true, CommandTimeout = 120
+        };
+        evolve.Migrate();
     }
 }

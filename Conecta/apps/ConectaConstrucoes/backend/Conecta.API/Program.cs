@@ -1,77 +1,117 @@
+using System.Globalization;
+using System.Text;
+using Conecta.Application.Categorias;
+using Conecta.Infrastructure.Persistencia;
 using Conecta.Infrastructure;
 using Conecta.Infrastructure.Database;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using Swashbuckle.AspNetCore.SwaggerGen;
 
-var builder = WebApplication.CreateBuilder(args);
-
-// 1. Configurar serviços da Camada de Infraestrutura (EF Core, Dapper e Evolve)
+var somenteMigracoes = args.Contains("--migrate-only");
+var builder = WebApplication.CreateBuilder(args.Where(a => a != "--migrate-only").ToArray());
+string Obrigatorio(string nome) => builder.Configuration[nome] is { Length: > 0 } valor
+    ? valor : throw new InvalidOperationException($"Configure {nome} por variável de ambiente ou user-secrets.");
 builder.Services.AddInfrastructure(builder.Configuration);
+// Permite aplicar somente as migrations com a configuração do banco, sem exigir um emissor JWT.
+if (somenteMigracoes)
+{
+    using var migracaoApp = builder.Build();
+    using var scope = migracaoApp.Services.CreateScope();
+    scope.ServiceProvider.GetRequiredService<EvolveDatabaseMigrator>().Migrate();
+    return;
+}
+var emissor = Obrigatorio("Jwt:Issuer");
+var audiencia = Obrigatorio("Jwt:Audience");
+var chave = Obrigatorio("Jwt:SigningKey");
+if (Encoding.UTF8.GetByteCount(chave) < 32) throw new InvalidOperationException("Jwt:SigningKey deve ter pelo menos 32 bytes.");
 
-// 2. Configurar Controllers
+
+builder.Services.AddScoped<ICategoriaRepositorio, CategoriaRepositorio>();
+builder.Services.AddScoped<CategoriaServico>();
 builder.Services.AddControllers();
-
-// 3. Configurar Swagger / OpenAPI
+builder.Services.AddProblemDetails();
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(o =>
+{
+    o.MapInboundClaims = false;
+    o.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true, ValidIssuer = emissor,
+        ValidateAudience = true, ValidAudience = audiencia,
+        ValidateLifetime = true, RequireExpirationTime = true,
+        RequireSignedTokens = true, ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(chave)),
+        ValidAlgorithms = [SecurityAlgorithms.HmacSha256],
+        NameClaimType = "sub", RoleClaimType = "role", ClockSkew = TimeSpan.FromSeconds(30)
+    };
+    o.Events = new JwtBearerEvents
+    {
+        OnTokenValidated = contexto =>
+        {
+            var sujeitos = contexto.Principal!.FindAll("sub").ToList();
+            if (sujeitos.Count != 1 || !int.TryParse(sujeitos[0].Value, NumberStyles.None,
+                CultureInfo.InvariantCulture, out var id) || id <= 0)
+                contexto.Fail("Identidade inválida.");
+            return Task.CompletedTask;
+        }
+    };
+});
+builder.Services.AddAuthorization();
+builder.Services.AddOpenApi();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
+builder.Services.AddSwaggerGen(o =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo
-    {
-        Title = "Conecta Construções API",
-        Version = "v1",
-        Description = "API do ecossistema Conecta Construções com suporte a acesso híbrido (EF Core + Dapper) e versionamento via Evolve."
-    });
+    o.SwaggerDoc("v1", new OpenApiInfo { Title = "ConectaConstruções — Categorias e Especialidades", Version = "v1" });
+    o.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "Conecta.API.xml"));
+    o.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    { Type = SecuritySchemeType.Http, Scheme = "bearer", BearerFormat = "JWT", Description = "Token validado: sub numérico e role ADMIN/PRESTADOR." });
+    o.OperationFilter<SegurancaSwagger>();
 });
 
-// 4. Configurar CORS para permitir requisições do frontend
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowFrontend", policy =>
-    {
-        policy.WithOrigins(
-                "http://localhost:3000",
-                "http://localhost:5173",
-                "http://127.0.0.1:3000",
-                "http://127.0.0.1:5173",
-                "http://frontend:80",
-                "http://frontend"
-            )
-            .AllowAnyHeader()
-            .AllowAnyMethod()
-            .AllowCredentials();
-    });
-});
-
+builder.Services.AddCors(options => options.AddPolicy("AllowFrontend", policy => policy
+    .WithOrigins("http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:3000",
+        "http://127.0.0.1:5173", "http://frontend:80", "http://frontend")
+    .AllowAnyHeader().AllowAnyMethod().AllowCredentials()));
 var app = builder.Build();
-
-// 5. Executar Migrações do Banco de Dados com Evolve na inicialização
-using (var scope = app.Services.CreateScope())
+if (builder.Configuration.GetValue("Database:MigrateOnStartup", true))
 {
-    var migrator = scope.ServiceProvider.GetRequiredService<EvolveDatabaseMigrator>();
-    try
-    {
-        migrator.Migrate();
-    }
-    catch (Exception ex)
-    {
-        app.Logger.LogWarning(ex, "Aviso: Não foi possível conectar ao banco para aplicar migrações na inicialização (o banco pode estar iniciando ou inacessível no ambiente local).");
-    }
+    using var scope = app.Services.CreateScope();
+    // Falha explicitamente se o schema não puder ser preparado; não inicia uma API incompatível.
+    scope.ServiceProvider.GetRequiredService<EvolveDatabaseMigrator>().Migrate();
 }
-
-// 6. Pipeline HTTP: Configuração do Swagger UI
-if (app.Environment.IsDevelopment() || true) // Disponível para visualização e testes
+app.UseExceptionHandler(tratamento => tratamento.Run(async contexto =>
 {
+    var erro = contexto.Features.Get<IExceptionHandlerFeature>()?.Error;
+    var status = erro is ErroModulo modulo ? modulo.Status : 500;
+    await Results.Problem(statusCode: status, title: erro is ErroModulo conhecido
+        ? conhecido.Message : "Erro interno ao processar a solicitação.").ExecuteAsync(contexto);
+}));
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
     app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Conecta API v1");
-        c.RoutePrefix = "swagger";
-    });
+    app.UseSwaggerUI();
 }
-
 app.UseCors("AllowFrontend");
-
+app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();
+
+public partial class Program;
+
+public sealed class SegurancaSwagger : IOperationFilter
+{
+    public void Apply(OpenApiOperation operation, OperationFilterContext context)
+    {
+        var atributos = context.MethodInfo.DeclaringType!.GetCustomAttributes(true)
+            .Concat(context.MethodInfo.GetCustomAttributes(true)).ToList();
+        if (atributos.OfType<AllowAnonymousAttribute>().Any() || !atributos.OfType<AuthorizeAttribute>().Any()) return;
+        operation.Security = [new OpenApiSecurityRequirement
+        { [new OpenApiSecuritySchemeReference("Bearer", context.Document)] = [] }];
+    }
+}

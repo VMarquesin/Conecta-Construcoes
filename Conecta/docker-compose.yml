@@ -8,7 +8,7 @@ services:
       - "${POSTGRES_PORT:-5432}:5432"
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-admin}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-admin123}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Configure POSTGRES_PASSWORD no ambiente local}
       POSTGRES_DB: ${POSTGRES_DB:-monorepo_db}
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -45,7 +45,10 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
       ASPNETCORE_URLS: http://+:5000
-      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-monorepo_db};Username=${POSTGRES_USER:-admin};Password=${POSTGRES_PASSWORD:-admin123};
+      Jwt__Issuer: ${JWT_ISSUER:?Configure JWT_ISSUER}
+      Jwt__Audience: ${JWT_AUDIENCE:?Configure JWT_AUDIENCE}
+      Jwt__SigningKey: ${JWT_SIGNING_KEY:?Configure JWT_SIGNING_KEY}
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-monorepo_db};Username=${POSTGRES_USER:-admin};Password=${POSTGRES_PASSWORD:?Configure POSTGRES_PASSWORD no ambiente local};
     depends_on:
       postgres:
         condition: service_healthy
