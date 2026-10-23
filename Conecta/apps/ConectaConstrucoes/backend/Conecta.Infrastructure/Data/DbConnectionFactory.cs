@@ -14,8 +14,7 @@ public class DbConnectionFactory : IDbConnectionFactory
 
     public DbConnectionFactory(IConfiguration configuration)
     {
-        _connectionString = configuration.GetConnectionString("DefaultConnection")
-            ?? throw new InvalidOperationException("Connection string 'DefaultConnection' não foi configurada.");
+        _connectionString = ConfiguracaoBanco.ObterConexao(configuration);
     }
 
     public IDbConnection CreateConnection()

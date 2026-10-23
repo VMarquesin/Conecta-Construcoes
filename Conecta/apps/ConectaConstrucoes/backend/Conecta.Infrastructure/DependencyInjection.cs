@@ -14,8 +14,7 @@ public static class DependencyInjection
     /// </summary>
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("DefaultConnection")
-            ?? throw new InvalidOperationException("Connection string 'DefaultConnection' não encontrada na configuração.");
+        var connectionString = ConfiguracaoBanco.ObterConexao(configuration);
 
         // 1. EF Core para PostgreSQL (Escrita e modelo de domínio)
         services.AddDbContext<AppDbContext>(options =>
