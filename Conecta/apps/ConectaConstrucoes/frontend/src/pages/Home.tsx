@@ -191,8 +191,7 @@ export default function Home() {
               <Link to="/" className="desktop-nav-link active">Início</Link>
               <Link to="/busca" className="desktop-nav-link">Buscar Serviços</Link>
               <Link to="/pedidos" className="desktop-nav-link">Meus Pedidos</Link>
-              <a href="#categorias" className="desktop-nav-link">Categorias</a>
-              <a href="#profissionais" className="desktop-nav-link">Profissionais</a>
+              <Link to="/pro" className="desktop-nav-link" style={{ color: '#b45309', fontWeight: 800 }}>Conecta PRO ★</Link>
               <Link to="/admin" className="desktop-nav-link">Painel Admin</Link>
             </nav>
 

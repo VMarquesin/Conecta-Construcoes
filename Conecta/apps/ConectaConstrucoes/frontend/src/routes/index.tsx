@@ -5,6 +5,9 @@ import PrestadorPerfil from '../pages/PrestadorPerfil'
 import MeusPedidos from '../pages/MeusPedidos'
 import PedidoDetalhe from '../pages/PedidoDetalhe'
 import ChatPedido from '../pages/ChatPedido'
+import ProDashboard from '../pages/pro/ProDashboard'
+import ProAnaliseSolicitacao from '../pages/pro/ProAnaliseSolicitacao'
+import ProPortfolio from '../pages/pro/ProPortfolio'
 import AdminLayout from '../core/layout/AdminLayout'
 import AdminDashboard from '../pages/admin/AdminDashboard'
 import UsuariosLista from '../pages/admin/UsuariosLista'
@@ -40,6 +43,13 @@ export default function AppRoutes() {
       {/* Chat com o Prestador */}
       <Route path="/chat/:id" element={<ChatPedido />} />
       <Route path="/chat" element={<ChatPedido />} />
+
+      {/* Módulo Conecta PRO (Painel do Prestador) */}
+      <Route path="/pro" element={<ProDashboard />} />
+      <Route path="/pro/dashboard" element={<ProDashboard />} />
+      <Route path="/pro/solicitacao/:id" element={<ProAnaliseSolicitacao />} />
+      <Route path="/pro/pedidos/:id/analisar" element={<ProAnaliseSolicitacao />} />
+      <Route path="/pro/portfolio" element={<ProPortfolio />} />
 
       {/* Módulo de Administração */}
       <Route path="/admin" element={<AdminLayout />}>

@@ -1,0 +1,508 @@
+/* ProPortfolio.css */
+
+.portfolio-viewport {
+  min-height: 100vh;
+  background-color: #f8fafc;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #0f172a;
+  padding-bottom: 95px;
+}
+
+.portfolio-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+/* Header */
+.portfolio-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 4px;
+  margin-bottom: 8px;
+}
+
+.portfolio-back-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #1e293b;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.portfolio-header-title {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.portfolio-user-avatar-wrap {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid #0056d6;
+}
+
+.portfolio-header-avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Title Bar */
+.portfolio-title-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.portfolio-title-main {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 850;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+
+.portfolio-title-sub {
+  font-size: 13px;
+  color: #64748b;
+  display: block;
+  margin-top: 2px;
+}
+
+.btn-nova-foto {
+  background: #0056d6;
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  padding: 9px 16px;
+  font-size: 13.5px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  box-shadow: 0 3px 8px rgba(0, 86, 214, 0.25);
+  transition: all 0.2s;
+}
+
+.btn-nova-foto:hover {
+  background: #0045ab;
+  transform: translateY(-1px);
+}
+
+/* Impulso Card */
+.portfolio-impulso-card {
+  background: #f0f7ff;
+  border: 1px solid #dbeafe;
+  border-radius: 20px;
+  padding: 18px 20px;
+  margin-bottom: 22px;
+}
+
+.impulso-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.impulso-title-col {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.impulso-tag-destaque {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 14.5px;
+  font-weight: 800;
+  color: #1e3a8a;
+}
+
+.impulso-mult-badge {
+  background: #fef3c7;
+  color: #b45309;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid #fde68a;
+}
+
+.impulso-desc {
+  margin: 0 0 12px 0;
+  font-size: 13px;
+  color: #3b82f6;
+  line-height: 1.45;
+}
+
+.impulso-footer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid #dbeafe;
+  padding-top: 12px;
+}
+
+.impulso-stats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: #1e40af;
+}
+
+.dot-sep {
+  color: #93c5fd;
+}
+
+.link-ver-vitrine {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 750;
+  color: #0056d6;
+  text-decoration: none;
+}
+
+/* Section Cards */
+.portfolio-section-card {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 22px;
+  border: 1px solid #f1f5f9;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.03);
+  margin-bottom: 22px;
+}
+
+.section-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.section-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.section-card-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.badge-visivel-vitrine {
+  background: #eff6ff;
+  color: #0056d6;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.char-counter {
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.section-card-hint {
+  margin: 0 0 14px 0;
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.sobre-mim-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1.5px solid #cbd5e1;
+  font-family: inherit;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: #334155;
+  outline: none;
+  resize: vertical;
+  background: #f8fafc;
+  margin-bottom: 14px;
+}
+
+.sobre-mim-textarea:focus {
+  border-color: #0056d6;
+  background: #ffffff;
+}
+
+.sobre-mim-footer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.salvo-ok {
+  font-size: 12.5px;
+  color: #059669;
+  font-weight: 700;
+}
+
+.salvo-pendente {
+  font-size: 12.5px;
+  color: #d97706;
+  font-weight: 700;
+}
+
+.btn-salvar-texto {
+  background: #0056d6;
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  padding: 8px 18px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-salvar-texto:hover {
+  background: #0045ab;
+}
+
+/* Fotos Filter */
+.badge-fotos-count {
+  background: #eff6ff;
+  color: #0056d6;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+.fotos-filter-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 18px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.foto-tab-btn {
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.foto-tab-btn.active {
+  background: #0f172a;
+  color: #ffffff;
+  border-color: #0f172a;
+  font-weight: 700;
+}
+
+/* Photos Grid */
+.portfolio-photos-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+@media (min-width: 650px) {
+  .portfolio-photos-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.photo-card-item {
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.photo-img-wrap {
+  position: relative;
+  height: 140px;
+  background: #f1f5f9;
+}
+
+.photo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.photo-tag-overlay {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(4px);
+  color: #ffffff;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.photo-delete-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ef4444;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.photo-delete-btn:hover {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.photo-info-footer {
+  padding: 10px 12px;
+}
+
+.photo-title {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.photo-detail {
+  font-size: 11.5px;
+  color: #64748b;
+  margin-top: 2px;
+  display: block;
+}
+
+/* Upload Dashed Card */
+.upload-dashed-card {
+  border: 2px dashed #bfdbfe;
+  background: #f0f7ff;
+  border-radius: 18px;
+  padding: 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.upload-dashed-card:hover {
+  background: #e0f2fe;
+  border-color: #0056d6;
+}
+
+.upload-icon-circle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10px;
+  box-shadow: 0 2px 6px rgba(0, 86, 214, 0.15);
+}
+
+.upload-title {
+  font-size: 14.5px;
+  font-weight: 800;
+  color: #0056d6;
+}
+
+.upload-sub {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 3px;
+}
+
+/* Tip Card */
+.portfolio-tip-card {
+  background: #fef9c3;
+  border: 1px solid #fef08a;
+  border-radius: 20px;
+  padding: 18px 20px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.tip-pro-icon {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.tip-pro-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.tip-pro-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: #854d0e;
+  margin-bottom: 4px;
+}
+
+.tip-pro-desc {
+  margin: 0 0 10px 0;
+  font-size: 12.5px;
+  color: #a16207;
+  line-height: 1.45;
+}
+
+.tip-pro-tags {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tip-tag {
+  background: #ffffff;
+  border: 1px solid #fde047;
+  color: #854d0e;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
