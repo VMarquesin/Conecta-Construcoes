@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useChat } from '../../context/ChatContext'
+import AccountTrigger from '../../components/session/AccountTrigger'
 import './ProAnaliseSolicitacao.css'
 
 import lucasAvatar from '../../assets/avatars/lucas.jpg'
@@ -55,22 +56,26 @@ export default function ProAnaliseSolicitacao() {
 
   return (
     <div className="analise-viewport">
-      <div className="analise-container">
-        {/* Top Header */}
-        <header className="analise-header">
-          <button className="analise-back-btn" onClick={() => navigate('/pro')} title="Voltar ao Painel">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="19" y1="12" x2="5" y2="12" />
-              <polyline points="12 19 5 12 12 5" />
-            </svg>
-          </button>
-
-          <h1 className="analise-header-title">Detalhes Da Solicitação</h1>
-
-          <div className="analise-user-avatar-wrap" title="Carlos Silva">
-            <img src={carlosAvatar} alt="Carlos Silva" className="analise-header-avatar" />
+      {/* Top Header - Full width */}
+      <header className="analise-header">
+        <div className="analise-header-inner">
+          <div className="analise-header-left">
+            <button className="analise-back-btn" onClick={() => navigate('/pro')} title="Voltar ao Painel">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="19" y1="12" x2="5" y2="12" />
+                <polyline points="12 19 5 12 12 5" />
+              </svg>
+            </button>
+            <h1 className="analise-header-title">Detalhes Da Solicitação</h1>
           </div>
-        </header>
+
+          <AccountTrigger className="analise-user-avatar-wrap" title="Minha conta">
+            <img src={carlosAvatar} alt="Carlos Silva" className="analise-header-avatar" />
+          </AccountTrigger>
+        </div>
+      </header>
+
+      <div className="analise-container">
 
         {enviadoSucesso && (
           <div className="proposta-sucesso-toast">

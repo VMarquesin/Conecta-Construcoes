@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useChat } from '../context/ChatContext'
 import HeaderChatButton from '../components/chat/HeaderChatButton'
+import AccountTrigger from '../components/session/AccountTrigger'
 import './MeusPedidos.css'
 
 import carlosAvatar from '../assets/avatars/carlos.jpg'
@@ -148,7 +149,6 @@ export default function MeusPedidos() {
               <Link to="/" className="desktop-nav-link">Início</Link>
               <Link to="/busca" className="desktop-nav-link">Buscar Serviços</Link>
               <Link to="/pedidos" className="desktop-nav-link active">Meus Pedidos</Link>
-              <Link to="/admin" className="desktop-nav-link">Painel Admin</Link>
             </nav>
 
             <div className="home-header-actions">
@@ -161,12 +161,12 @@ export default function MeusPedidos() {
                 </svg>
               </button>
 
-              <Link to="/admin" className="user-avatar-btn" title="Perfil / Admin">
+              <AccountTrigger className="user-avatar-btn" title="Minha conta">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
                   <circle cx="12" cy="7" r="4" />
                 </svg>
-              </Link>
+              </AccountTrigger>
             </div>
           </div>
         </header>
@@ -481,7 +481,6 @@ export default function MeusPedidos() {
               <Link to="/">Início</Link>
               <Link to="/busca">Buscar Serviços</Link>
               <Link to="/pedidos">Meus Pedidos</Link>
-              <Link to="/admin">Administração</Link>
             </div>
           </div>
         </footer>
@@ -514,13 +513,13 @@ export default function MeusPedidos() {
             <span>Pedidos</span>
           </Link>
 
-          <Link to="/admin" className="nav-item">
+          <AccountTrigger className="nav-item" title="Minha conta">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
               <circle cx="12" cy="7" r="4" />
             </svg>
             <span>Perfil</span>
-          </Link>
+          </AccountTrigger>
         </nav>
       </div>
     </div>

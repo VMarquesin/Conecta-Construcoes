@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useChat } from '../context/ChatContext'
 import HeaderChatButton from '../components/chat/HeaderChatButton'
+import AccountTrigger from '../components/session/AccountTrigger'
 import './Busca.css'
 
 import carlosAvatar from '../assets/avatars/carlos.jpg'
@@ -428,13 +429,13 @@ export default function Busca() {
             <span>Pedidos</span>
           </Link>
 
-          <Link to="/admin" className="nav-item">
+          <AccountTrigger className="nav-item" title="Minha conta">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
               <circle cx="12" cy="7" r="4" />
             </svg>
             <span>Perfil</span>
-          </Link>
+          </AccountTrigger>
         </nav>
       </div>
     </div>

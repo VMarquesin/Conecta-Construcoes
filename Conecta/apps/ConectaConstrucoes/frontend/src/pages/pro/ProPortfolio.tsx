@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import AccountTrigger from '../../components/session/AccountTrigger'
 import './ProPortfolio.css'
 
 import quadroImg from '../../assets/portfolio/quadro.jpg'
@@ -95,22 +96,26 @@ export default function ProPortfolio() {
 
   return (
     <div className="portfolio-viewport">
-      <div className="portfolio-container">
-        {/* Top Header */}
-        <header className="portfolio-header">
-          <button className="portfolio-back-btn" onClick={() => navigate('/pro')} title="Voltar ao Painel">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="19" y1="12" x2="5" y2="12" />
-              <polyline points="12 19 5 12 12 5" />
-            </svg>
-          </button>
-
-          <h1 className="portfolio-header-title">Gestão de Portfólio</h1>
-
-          <div className="portfolio-user-avatar-wrap" title="Carlos Silva">
-            <img src={carlosAvatar} alt="Carlos Silva" className="portfolio-header-avatar" />
+      {/* Top Header - Full width */}
+      <header className="portfolio-header">
+        <div className="portfolio-header-inner">
+          <div className="portfolio-header-left">
+            <button className="portfolio-back-btn" onClick={() => navigate('/pro')} title="Voltar ao Painel">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="19" y1="12" x2="5" y2="12" />
+                <polyline points="12 19 5 12 12 5" />
+              </svg>
+            </button>
+            <h1 className="portfolio-header-title">Gestão de Portfólio</h1>
           </div>
-        </header>
+
+          <AccountTrigger className="portfolio-user-avatar-wrap" title="Minha conta">
+            <img src={carlosAvatar} alt="Carlos Silva" className="portfolio-header-avatar" />
+          </AccountTrigger>
+        </div>
+      </header>
+
+      <div className="portfolio-container">
 
         {/* Título da Seção + Botão Nova Foto */}
         <div className="portfolio-title-bar">
@@ -150,14 +155,6 @@ export default function ProPortfolio() {
               <span className="dot-sep">•</span>
               <span>👁 <strong>182 visualizações/mês</strong></span>
             </div>
-            <Link to="/prestador/1" className="link-ver-vitrine">
-              <span>Ver Vitrine</span>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
-                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                <polyline points="15 3 21 3 21 9" />
-                <line x1="10" y1="14" x2="21" y2="3" />
-              </svg>
-            </Link>
           </div>
         </div>
 
@@ -337,13 +334,13 @@ export default function ProPortfolio() {
             <span>Portfólio</span>
           </Link>
 
-          <Link to="/prestador/1" className="pro-bottom-item">
+          <AccountTrigger className="pro-bottom-item" title="Minha conta">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
               <circle cx="12" cy="7" r="4" />
             </svg>
             <span>Perfil Pro</span>
-          </Link>
+          </AccountTrigger>
         </nav>
       </div>
     </div>

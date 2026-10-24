@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import AccountTrigger from '../components/session/AccountTrigger'
 import './ChatPedido.css'
 
 import carlosAvatar from '../assets/avatars/carlos.jpg'
@@ -125,7 +126,6 @@ export default function ChatPedido() {
               <Link to="/" className="desktop-nav-link">Início</Link>
               <Link to="/busca" className="desktop-nav-link">Buscar Serviços</Link>
               <Link to="/pedidos" className="desktop-nav-link active">Meus Pedidos</Link>
-              <Link to="/admin" className="desktop-nav-link">Painel Admin</Link>
             </nav>
 
             <div className="home-header-actions">
@@ -136,12 +136,12 @@ export default function ChatPedido() {
                 </svg>
                 <span className="header-badge-dot" />
               </button>
-              <Link to="/admin" className="user-avatar-btn" title="Meu Perfil">
+              <AccountTrigger className="user-avatar-btn" title="Minha conta">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
                   <circle cx="12" cy="7" r="4" />
                 </svg>
-              </Link>
+              </AccountTrigger>
             </div>
           </div>
         </header>

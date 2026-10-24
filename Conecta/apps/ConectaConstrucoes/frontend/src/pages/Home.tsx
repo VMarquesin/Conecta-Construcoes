@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import HeaderChatButton from '../components/chat/HeaderChatButton'
+import AccountTrigger from '../components/session/AccountTrigger'
+import { useSession } from '../context/SessionContext'
 import './Home.css'
 
 import carlosAvatar from '../assets/avatars/carlos.jpg'
@@ -133,6 +135,7 @@ const CATEGORIAS = [
 
 export default function Home() {
   const navigate = useNavigate()
+  const { usuario } = useSession()
   const [busca, setBusca] = useState('')
   const [categoriaAtiva, setCategoriaAtiva] = useState<string | null>(null)
 
@@ -191,8 +194,6 @@ export default function Home() {
               <Link to="/" className="desktop-nav-link active">Início</Link>
               <Link to="/busca" className="desktop-nav-link">Buscar Serviços</Link>
               <Link to="/pedidos" className="desktop-nav-link">Meus Pedidos</Link>
-              <Link to="/pro" className="desktop-nav-link" style={{ color: '#b45309', fontWeight: 800 }}>Conecta PRO ★</Link>
-              <Link to="/admin" className="desktop-nav-link">Painel Admin</Link>
             </nav>
 
             {/* Ações da Direita */}
@@ -214,7 +215,7 @@ export default function Home() {
                 <span className="header-badge-dot" />
               </button>
 
-              <Link to="/admin" className="user-profile-widget" title="Meu Perfil / Painel Admin">
+              <AccountTrigger className="user-profile-widget" title="Minha conta">
                 <div className="user-avatar-btn">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
@@ -222,10 +223,10 @@ export default function Home() {
                   </svg>
                 </div>
                 <div className="user-profile-text">
-                  <span className="user-profile-name">Matheus</span>
-                  <span className="user-profile-role">Admin / Cliente</span>
+                  <span className="user-profile-name">{usuario?.nome.split(' ')[0]}</span>
+                  <span className="user-profile-role">Cliente</span>
                 </div>
-              </Link>
+              </AccountTrigger>
             </div>
           </div>
         </header>
@@ -470,7 +471,6 @@ export default function Home() {
               <a href="#">Termos de Uso</a>
               <a href="#">Privacidade</a>
               <a href="#">Segurança & Garantia</a>
-              <Link to="/admin">Administração</Link>
             </div>
           </div>
         </footer>
@@ -503,13 +503,13 @@ export default function Home() {
             <span>Pedidos</span>
           </Link>
 
-          <Link to="/admin" className="nav-item">
+          <AccountTrigger className="nav-item" title="Minha conta">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
               <circle cx="12" cy="7" r="4" />
             </svg>
             <span>Perfil</span>
-          </Link>
+          </AccountTrigger>
         </nav>
       </div>
     </div>

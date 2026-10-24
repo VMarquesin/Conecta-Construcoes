@@ -8,6 +8,9 @@ import ChatPedido from '../pages/ChatPedido'
 import ProDashboard from '../pages/pro/ProDashboard'
 import ProAnaliseSolicitacao from '../pages/pro/ProAnaliseSolicitacao'
 import ProPortfolio from '../pages/pro/ProPortfolio'
+import Login from '../pages/Login'
+import RequirePerfil from '../components/session/RequirePerfil'
+import { PERFIL_INFO, useSession } from '../context/SessionContext'
 import AdminLayout from '../core/layout/AdminLayout'
 import AdminDashboard from '../pages/admin/AdminDashboard'
 import UsuariosLista from '../pages/admin/UsuariosLista'
@@ -18,51 +21,52 @@ import DocumentosPendentes from '../pages/admin/DocumentosPendentes'
 import Denuncias from '../pages/admin/Denuncias'
 
 export default function AppRoutes() {
+  const { perfilAtivo } = useSession()
+  const fallback = perfilAtivo ? PERFIL_INFO[perfilAtivo].home : '/login'
+
   return (
     <Routes>
-      {/* Tela inicial do usuário após login */}
-      <Route path="/" element={<Home />} />
-      <Route path="/inicio" element={<Home />} />
+      <Route path="/login" element={<Login />} />
 
-      {/* Tela de Busca e Listagem de Profissionais por Categoria */}
-      <Route path="/busca" element={<Busca />} />
-      <Route path="/pesquisa" element={<Busca />} />
-
-      {/* Perfil do Prestador (Vitrine) */}
-      <Route path="/prestador/:id" element={<PrestadorPerfil />} />
-      <Route path="/prestador" element={<PrestadorPerfil />} />
-
-      {/* Meus Pedidos */}
-      <Route path="/pedidos" element={<MeusPedidos />} />
-      <Route path="/meus-pedidos" element={<MeusPedidos />} />
-
-      {/* Detalhes do Pedido */}
-      <Route path="/pedidos/:id" element={<PedidoDetalhe />} />
-      <Route path="/pedido/:id" element={<PedidoDetalhe />} />
-
-      {/* Chat com o Prestador */}
-      <Route path="/chat/:id" element={<ChatPedido />} />
-      <Route path="/chat" element={<ChatPedido />} />
-
-      {/* Módulo Conecta PRO (Painel do Prestador) */}
-      <Route path="/pro" element={<ProDashboard />} />
-      <Route path="/pro/dashboard" element={<ProDashboard />} />
-      <Route path="/pro/solicitacao/:id" element={<ProAnaliseSolicitacao />} />
-      <Route path="/pro/pedidos/:id/analisar" element={<ProAnaliseSolicitacao />} />
-      <Route path="/pro/portfolio" element={<ProPortfolio />} />
-
-      {/* Módulo de Administração */}
-      <Route path="/admin" element={<AdminLayout />}>
-        <Route index element={<AdminDashboard />} />
-        <Route path="usuarios" element={<UsuariosLista />} />
-        <Route path="usuarios/:id" element={<UsuarioDetalhe />} />
-        <Route path="usuarios/:id/editar" element={<UsuarioEditar />} />
-        <Route path="usuarios/:id/roles" element={<UsuarioRoles />} />
-        <Route path="documentos" element={<DocumentosPendentes />} />
-        <Route path="denuncias" element={<Denuncias />} />
+      {/* ===== Perfil CLIENTE ===== */}
+      <Route element={<RequirePerfil perfil="CLIENTE" />}>
+        <Route path="/" element={<Home />} />
+        <Route path="/inicio" element={<Home />} />
+        <Route path="/busca" element={<Busca />} />
+        <Route path="/pesquisa" element={<Busca />} />
+        <Route path="/prestador/:id" element={<PrestadorPerfil />} />
+        <Route path="/prestador" element={<PrestadorPerfil />} />
+        <Route path="/pedidos" element={<MeusPedidos />} />
+        <Route path="/meus-pedidos" element={<MeusPedidos />} />
+        <Route path="/pedidos/:id" element={<PedidoDetalhe />} />
+        <Route path="/pedido/:id" element={<PedidoDetalhe />} />
+        <Route path="/chat/:id" element={<ChatPedido />} />
+        <Route path="/chat" element={<ChatPedido />} />
       </Route>
 
-      <Route path="*" element={<Navigate to="/" replace />} />
+      {/* ===== Perfil PRESTADOR (Conecta PRO) ===== */}
+      <Route element={<RequirePerfil perfil="PRESTADOR" />}>
+        <Route path="/pro" element={<ProDashboard />} />
+        <Route path="/pro/dashboard" element={<ProDashboard />} />
+        <Route path="/pro/solicitacao/:id" element={<ProAnaliseSolicitacao />} />
+        <Route path="/pro/pedidos/:id/analisar" element={<ProAnaliseSolicitacao />} />
+        <Route path="/pro/portfolio" element={<ProPortfolio />} />
+      </Route>
+
+      {/* ===== Perfil ADMIN ===== */}
+      <Route element={<RequirePerfil perfil="ADMIN" />}>
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<AdminDashboard />} />
+          <Route path="usuarios" element={<UsuariosLista />} />
+          <Route path="usuarios/:id" element={<UsuarioDetalhe />} />
+          <Route path="usuarios/:id/editar" element={<UsuarioEditar />} />
+          <Route path="usuarios/:id/roles" element={<UsuarioRoles />} />
+          <Route path="documentos" element={<DocumentosPendentes />} />
+          <Route path="denuncias" element={<Denuncias />} />
+        </Route>
+      </Route>
+
+      <Route path="*" element={<Navigate to={fallback} replace />} />
     </Routes>
   )
 }

@@ -9,25 +9,33 @@
 }
 
 .pro-container {
-  max-width: 900px;
+  max-width: 1240px;
+  width: 100%;
   margin: 0 auto;
-  padding: 0 16px;
+  padding: 24px 24px 95px;
+  box-sizing: border-box;
 }
 
-/* Header Conecta PRO */
+/* Header Conecta PRO - Full-width match */
 .pro-header {
-  background: #ffffff;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(14px);
   border-bottom: 1px solid #e2e8f0;
-  margin-bottom: 18px;
-  border-radius: 0 0 18px 18px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  width: 100%;
 }
 
 .pro-header-inner {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 14px 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
+  gap: 20px;
 }
 
 .pro-brand {
@@ -171,10 +179,40 @@
 .pro-profile-card {
   background: #ffffff;
   border-radius: 20px;
-  padding: 22px;
+  padding: 24px;
   border: 1px solid #f1f5f9;
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.03);
-  margin-bottom: 22px;
+  margin-bottom: 24px;
+}
+
+/* Dashboard Desktop Grid Layout */
+.pro-dashboard-content-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.pro-grid-main-col,
+.pro-grid-side-col {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+@media (min-width: 992px) {
+  .pro-dashboard-content-grid {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 28px;
+    align-items: start;
+  }
+}
+
+@media (min-width: 1200px) {
+  .pro-dashboard-content-grid {
+    grid-template-columns: 1fr 420px;
+    gap: 32px;
+  }
 }
 
 .pro-profile-header-row {
