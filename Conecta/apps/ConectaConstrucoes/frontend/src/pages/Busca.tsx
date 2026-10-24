@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import './Busca.css'
 
 import carlosAvatar from '../assets/avatars/carlos.jpg'
@@ -128,6 +128,7 @@ const PROFISSIONAIS_BUSCA: ProfissionalBusca[] = [
 ]
 
 export default function Busca() {
+  const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
   const initialTermo = params.get('q') || params.get('categoria') || 'Eletricista residencial'
   const [termo, setTermo] = useState(initialTermo)
@@ -351,7 +352,11 @@ export default function Busca() {
                     </div>
 
                     <div className="search-card-actions">
-                      <button className="btn-ver-perfil">
+                      <button
+                        className="btn-ver-perfil"
+                        onClick={() => navigate(`/prestador/${prof.id}`)}
+                        title={`Ver perfil completo de ${prof.nome}`}
+                      >
                         <span>Ver Perfil</span>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                           <polyline points="9 18 15 12 9 6" />

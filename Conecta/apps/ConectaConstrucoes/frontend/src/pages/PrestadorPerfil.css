@@ -1,0 +1,786 @@
+/* PrestadorPerfil.css - Estilos da Página de Perfil do Prestador (Vitrine) */
+
+.perfil-viewport {
+  min-height: 100vh;
+  background-color: #f8fafc;
+  color: #0f172a;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+
+.perfil-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ============================================================
+   HEADER SUPERIOR
+   ============================================================ */
+.perfil-top-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.perfil-top-inner {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* ============================================================
+   CORPO PRINCIPAL (DESKTOP EM 2 COLUNAS / MOBILE EM 1 COLUNA)
+   ============================================================ */
+.perfil-main-layout {
+  max-width: 1240px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 0 100px;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 900px) {
+  .perfil-main-layout {
+    display: grid;
+    grid-template-columns: 1.4fr 0.9fr;
+    gap: 32px;
+    padding: 24px 20px 100px;
+  }
+}
+
+/* Coluna Esquerda: Vitrine e Conteúdo */
+.perfil-left-col {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+/* ============================================================
+   ÁREA DE CAPA E AVATAR SOBREPOSTO
+   ============================================================ */
+.cover-wrapper {
+  position: relative;
+  width: 100%;
+  height: 280px;
+  background-color: #1e293b;
+  overflow: visible;
+  margin-bottom: 50px;
+}
+
+@media (min-width: 900px) {
+  .cover-wrapper {
+    height: 340px;
+    border-radius: 24px;
+    overflow: visible;
+    margin-bottom: 60px;
+  }
+}
+
+.cover-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+@media (min-width: 900px) {
+  .cover-image {
+    border-radius: 24px;
+  }
+}
+
+.cover-overlay-actions {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  right: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 10;
+}
+
+.cover-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0f172a;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.cover-btn:hover {
+  background: #ffffff;
+  transform: scale(1.06);
+}
+
+.cover-right-btns {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cover-btn.favorited svg {
+  fill: #ef4444;
+  color: #ef4444;
+}
+
+.cover-dots {
+  position: absolute;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  z-index: 10;
+}
+
+.cover-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.cover-dot.active {
+  background: #ffffff;
+  width: 16px;
+  border-radius: 99px;
+}
+
+/* Avatar e Identidade Sobrepostos */
+.provider-identity-card {
+  position: absolute;
+  bottom: -45px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 15;
+}
+
+.provider-avatar-circle {
+  position: relative;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  border: 4px solid #ffffff;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.provider-avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.provider-verified-check {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 26px;
+  height: 26px;
+  background-color: #0056d6;
+  color: #ffffff;
+  border-radius: 50%;
+  border: 2.5px solid #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ============================================================
+   INFORMAÇÕES DO PRESTADOR (Nome, Status, Localização)
+   ============================================================ */
+.provider-header-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  padding: 0 20px;
+}
+
+.pill-destaque-regiao {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff8e6;
+  color: #854d0e;
+  border: 1px solid #fed7aa;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 5px 14px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  box-shadow: 0 2px 6px rgba(133, 77, 14, 0.06);
+}
+
+.provider-fullname {
+  font-size: 26px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.provider-specialty-sub {
+  font-size: 15px;
+  color: #475569;
+  font-weight: 500;
+  margin: 0;
+}
+
+.provider-distance-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+  color: #64748b;
+}
+
+.provider-distance-row svg {
+  color: #0056d6;
+}
+
+/* ============================================================
+   CARD DE INVESTIMENTO INICIAL
+   ============================================================ */
+.investment-card {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 20px;
+  padding: 18px 24px;
+  margin: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  box-shadow: 0 4px 14px rgba(0, 86, 214, 0.05);
+}
+
+.investment-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.investment-tag {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.investment-val {
+  font-size: 24px;
+  font-weight: 800;
+  color: #0056d6;
+}
+
+.investment-val small {
+  font-size: 14px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.investment-free-quote {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #0056d6;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: right;
+}
+
+/* ============================================================
+   GRID DE 4 STATS (Avaliações, Experiência, Resposta, Raio)
+   ============================================================ */
+.stats-2x2-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  padding: 0 20px;
+}
+
+.stat-metric-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+}
+
+.stat-icon-circ {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.stat-icon-circ.star { background: #fef3c7; color: #d97706; }
+.stat-icon-circ.shield { background: #eff6ff; color: #0284c7; }
+.stat-icon-circ.lightning { background: #dcfce7; color: #16a34a; }
+.stat-icon-circ.compass { background: #f1f5f9; color: #0056d6; }
+
+.stat-text-col {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.stat-main-number {
+  font-size: 15px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.stat-main-number small {
+  font-weight: 500;
+  color: #64748b;
+}
+
+.stat-sub-label {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* ============================================================
+   SEÇÃO "SOBRE O PROFISSIONAL"
+   ============================================================ */
+.section-block {
+  padding: 0 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.section-block-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.section-block-desc {
+  font-size: 14.5px;
+  color: #475569;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.checklist-pills-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.checklist-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  color: #1e293b;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 999px;
+}
+
+.checklist-pill svg {
+  color: #0056d6;
+}
+
+/* ============================================================
+   SEÇÃO "TRABALHOS REALIZADOS" (GALERIA)
+   ============================================================ */
+.portfolio-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.portfolio-link-count {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #0056d6;
+  text-decoration: none;
+}
+
+.portfolio-link-count:hover {
+  text-decoration: underline;
+}
+
+.portfolio-grid-2x2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+
+.portfolio-card-item {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.portfolio-card-item:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.1);
+  border-color: #93c5fd;
+}
+
+.portfolio-img-box {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background: #f1f5f9;
+}
+
+.portfolio-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.portfolio-card-item:hover .portfolio-img {
+  transform: scale(1.05);
+}
+
+.portfolio-caption {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.portfolio-caption-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.portfolio-caption-sub {
+  font-size: 12px;
+  color: #64748b;
+  margin: 0;
+}
+
+/* ============================================================
+   BANNER "CONECTA PROTEGE"
+   ============================================================ */
+.perfil-protege-banner {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 20px;
+  padding: 20px 24px;
+  margin: 0 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.protege-shield-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0056d6;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 86, 214, 0.1);
+}
+
+.protege-banner-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.protege-banner-title {
+  font-size: 15.5px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.protege-banner-title svg {
+  color: #0056d6;
+}
+
+.protege-banner-desc {
+  font-size: 13px;
+  color: #475569;
+  line-height: 1.45;
+  margin: 0;
+}
+
+/* ============================================================
+   SEÇÃO "AVALIAÇÕES RECENTES"
+   ============================================================ */
+.reviews-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.reviews-score-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.reviews-score-badge svg {
+  color: #d97706;
+}
+
+.reviews-cards-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.review-item-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.03);
+}
+
+.review-user-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.review-user-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.review-initials-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.avatar-blue { background: #e0f2fe; color: #0369a1; }
+.avatar-amber { background: #fef3c7; color: #b45309; }
+.avatar-coral { background: #ffe4e6; color: #be123c; }
+
+.review-user-names {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.review-name {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.review-date {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.review-stars {
+  color: #f59e0b;
+  font-size: 13px;
+  letter-spacing: 2px;
+}
+
+.review-comment {
+  font-size: 13.5px;
+  color: #475569;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ============================================================
+   STICKY BAR INFERIOR DE SOLICITAÇÃO (CTA)
+   ============================================================ */
+.perfil-cta-bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(14px);
+  border-top: 1px solid #e2e8f0;
+  padding: 12px 20px;
+  z-index: 50;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.06);
+}
+
+.cta-bar-inner {
+  max-width: 1240px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.cta-price-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.cta-price-hint {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.cta-price-amount {
+  font-size: 18px;
+  font-weight: 800;
+  color: #0056d6;
+}
+
+.cta-buttons-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  justify-content: flex-end;
+}
+
+.cta-chat-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.cta-chat-btn:hover {
+  background: #e2e8f0;
+  color: #0056d6;
+}
+
+.cta-submit-btn {
+  padding: 0 24px;
+  height: 48px;
+  background: #0056d6;
+  border: 1px solid #0056d6;
+  border-radius: 14px;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 86, 214, 0.25);
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.cta-submit-btn:hover {
+  background: #0042a5;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(0, 86, 214, 0.35);
+}
+
+/* ============================================================
+   RESPONSIVIDADE DESKTOP
+   ============================================================ */
+@media (min-width: 900px) {
+  .perfil-cta-bottom-bar {
+    display: none; /* No desktop o formulário/CTA fica na coluna lateral fixa */
+  }
+
+  .desktop-sticky-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    position: sticky;
+    top: 90px;
+    height: fit-content;
+  }
+}
+
+@media (max-width: 899px) {
+  .desktop-sticky-sidebar {
+    display: none;
+  }
+
+  .perfil-viewport {
+    align-items: center;
+  }
+
+  .perfil-container {
+    max-width: 540px;
+    background: #ffffff;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+    padding-bottom: 90px;
+  }
+}

@@ -420,7 +420,7 @@ export default function Home() {
                     {/* Botão Ver Perfil SEMPRE presente no card (mobile e desktop) */}
                     <button
                       className="prof-action-btn"
-                      onClick={() => navigate(`/busca?q=${encodeURIComponent(prof.nome)}`)}
+                      onClick={() => navigate(`/prestador/${prof.id}`)}
                       title={`Ver perfil completo de ${prof.nome}`}
                     >
                       <span>Ver Perfil</span>
