@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useChat } from '../context/ChatContext'
+import HeaderChatButton from '../components/chat/HeaderChatButton'
 import './MeusPedidos.css'
 
 import carlosAvatar from '../assets/avatars/carlos.jpg'
@@ -100,6 +102,7 @@ const PEDIDOS_INICIAIS: Pedido[] = [
 
 export default function MeusPedidos() {
   const navigate = useNavigate()
+  const { abrirChat } = useChat()
   const [pedidos, setPedidos] = useState<Pedido[]>(PEDIDOS_INICIAIS)
   const [abaAtiva, setAbaAtiva] = useState<'pendente' | 'aceito' | 'concluido'>('pendente')
   const [pedidoSelecionado, setPedidoSelecionado] = useState<Pedido | null>(null)
@@ -149,6 +152,8 @@ export default function MeusPedidos() {
             </nav>
 
             <div className="home-header-actions">
+              <HeaderChatButton />
+
               <button className="header-action-btn" title="Notificações" aria-label="Notificações">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
@@ -448,7 +453,7 @@ export default function MeusPedidos() {
                 </button>
                 <button
                   onClick={() => {
-                    alert(`Iniciando conversa com ${pedidoSelecionado.prestadorNome}...`)
+                    abrirChat(pedidoSelecionado.prestadorId)
                     setPedidoSelecionado(null)
                   }}
                   style={{

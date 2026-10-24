@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { useChat } from '../context/ChatContext'
+import HeaderChatButton from '../components/chat/HeaderChatButton'
 import './Busca.css'
 
 import carlosAvatar from '../assets/avatars/carlos.jpg'
@@ -129,6 +131,7 @@ const PROFISSIONAIS_BUSCA: ProfissionalBusca[] = [
 
 export default function Busca() {
   const navigate = useNavigate()
+  const { abrirChat } = useChat()
   const [params, setParams] = useSearchParams()
   const initialTermo = params.get('q') || params.get('categoria') || 'Eletricista residencial'
   const [termo, setTermo] = useState(initialTermo)
@@ -201,6 +204,8 @@ export default function Busca() {
                   <line x1="17" y1="16" x2="23" y2="16" />
                 </svg>
               </button>
+
+              <HeaderChatButton />
             </div>
 
             {/* Linha de Metadados: Contagem + Link para Mapa */}
@@ -364,7 +369,7 @@ export default function Busca() {
                       </button>
 
                       {prof.temChat && (
-                        <button className="btn-conversar">
+                        <button className="btn-conversar" onClick={() => abrirChat(prof.id)}>
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                           </svg>

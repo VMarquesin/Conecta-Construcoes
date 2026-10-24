@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useChat } from '../context/ChatContext'
+import HeaderChatButton from '../components/chat/HeaderChatButton'
 import './PedidoDetalhe.css'
 
 import carlosAvatar from '../assets/avatars/carlos.jpg'
@@ -7,6 +9,7 @@ import quadroDisjuntores from '../assets/portfolio/quadro.jpg'
 
 export default function PedidoDetalhe() {
   const navigate = useNavigate()
+  const { abrirChat } = useChat()
   const { id } = useParams<{ id?: string }>()
   const pedidoNumero = id || '1042'
 
@@ -68,6 +71,8 @@ export default function PedidoDetalhe() {
 
             {/* Ações da Direita */}
             <div className="home-header-actions">
+              <HeaderChatButton />
+
               <button className="header-action-btn" title="Notificações" aria-label="Notificações">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
@@ -309,13 +314,16 @@ export default function PedidoDetalhe() {
 
               {/* Botões de Ação do Prestador */}
               <div className="prestador-buttons-row">
-                <Link to={`/chat/${pedidoNumero}`} className="btn-chat-principal">
+                <button
+                  className="btn-chat-principal"
+                  onClick={() => abrirChat('carlos-silva')}
+                >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                   </svg>
                   <span>Abrir Conversa no Chat</span>
                   <span className="chat-badge-dot" />
-                </Link>
+                </button>
 
                 <button
                   className="btn-call-circle"

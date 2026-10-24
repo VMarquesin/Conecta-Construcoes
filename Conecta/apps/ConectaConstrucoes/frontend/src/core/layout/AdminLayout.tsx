@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { Icon, type IconName } from '../components/Icon'
+import HeaderChatButton from '../../components/chat/HeaderChatButton'
 
 const nav: { to: string; label: string; icon: IconName; end?: boolean }[] = [
   { to: '/admin', label: 'Dashboard', icon: 'dashboard', end: true },
@@ -31,6 +32,7 @@ export default function AdminLayout() {
           <button type="button" className="icon-btn menu-btn" onClick={() => setOpen(true)} aria-label="Abrir menu"><Icon name="menu" size={22} /></button>
           <span className="topbar-title">Painel Administrativo</span>
           <div className="topbar-right">
+            <HeaderChatButton />
             <button type="button" className="icon-btn" aria-label="Notificações"><Icon name="bell" /></button>
             <span className="avatar" title="Administrador">AD</span>
           </div>

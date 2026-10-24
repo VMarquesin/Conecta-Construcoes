@@ -1,0 +1,483 @@
+/* FloatingChatBox.css */
+
+.messenger-docked-chatbox {
+  position: fixed;
+  bottom: 0;
+  right: 20px;
+  width: 338px;
+  height: 450px;
+  max-height: calc(100vh - 80px);
+  max-width: calc(100vw - 20px);
+  background: #ffffff;
+  border-radius: 14px 14px 0 0;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.18), 0 0 1px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+  border-bottom: none;
+  z-index: 1050;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  animation: slideUpChat 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUpChat {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Chat Head Minimizado */
+.messenger-chat-head {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.22);
+  cursor: pointer;
+  z-index: 1050;
+  border: 3px solid #ffffff;
+  background: #0056d6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.messenger-chat-head:hover {
+  transform: scale(1.08);
+}
+
+.messenger-chat-head-avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.messenger-chat-head-online {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #10b981;
+  border: 2px solid #ffffff;
+}
+
+.messenger-chat-head-close {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #475569;
+  color: #ffffff;
+  border: 1.5px solid #ffffff;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+/* Docked Header */
+.docked-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #ffffff;
+  border-bottom: 1px solid #f1f5f9;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.docked-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.docked-avatar-wrap {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+}
+
+.docked-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.docked-online-dot {
+  position: absolute;
+  bottom: 0px;
+  right: 0px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #10b981;
+  border: 1.5px solid #ffffff;
+}
+
+.docked-user-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.docked-user-name-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.docked-user-name {
+  font-size: 13.5px;
+  font-weight: 750;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.docked-user-status {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.docked-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.docked-btn-action {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0056d6;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.docked-btn-action:hover {
+  background: #f1f5f9;
+}
+
+/* Messages Body */
+.docked-messages-body {
+  flex: 1;
+  padding: 12px;
+  background: #f8fafc;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.docked-security-tag {
+  background: #eff6ff;
+  border: 1px solid #dbeafe;
+  border-radius: 10px;
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #1e40af;
+  margin-bottom: 4px;
+}
+
+.docked-msg-row {
+  display: flex;
+  width: 100%;
+}
+
+.docked-msg-user {
+  justify-content: flex-end;
+}
+
+.docked-msg-prestador {
+  justify-content: flex-start;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.docked-bubble-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.docked-bubble-wrapper {
+  max-width: 82%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.docked-bubble-user {
+  max-width: 82%;
+  background: #0056d6;
+  color: #ffffff;
+  padding: 8px 12px;
+  border-radius: 16px 16px 3px 16px;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.docked-bubble-user p {
+  margin: 0;
+}
+
+.docked-time-sub {
+  display: block;
+  font-size: 9.5px;
+  color: rgba(255, 255, 255, 0.8);
+  text-align: right;
+  margin-top: 4px;
+}
+
+.docked-bubble-prestador {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  color: #0f172a;
+  padding: 8px 12px;
+  border-radius: 16px 16px 16px 3px;
+  font-size: 13px;
+  line-height: 1.35;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.docked-bubble-prestador p {
+  margin: 0;
+}
+
+.docked-time-sub-left {
+  display: block;
+  font-size: 9.5px;
+  color: #94a3b8;
+  margin-top: 4px;
+}
+
+/* Imagem Anexada */
+.docked-img-wrap {
+  margin-top: 4px;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.docked-attached-img {
+  width: 100%;
+  max-height: 120px;
+  object-fit: cover;
+  display: block;
+}
+
+.docked-img-label {
+  display: block;
+  padding: 3px 6px;
+  font-size: 10px;
+  background: rgba(0, 0, 0, 0.5);
+  color: #ffffff;
+}
+
+/* Proposta Card */
+.docked-proposta-card {
+  background: #ffffff;
+  border: 1.5px solid #dbeafe;
+  border-radius: 12px;
+  padding: 10px;
+  box-shadow: 0 2px 8px rgba(0, 86, 214, 0.08);
+}
+
+.docked-proposta-badge {
+  font-size: 9.5px;
+  font-weight: 800;
+  color: #0056d6;
+  text-transform: uppercase;
+}
+
+.docked-proposta-title {
+  margin: 3px 0 6px 0;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.docked-proposta-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 8px 0;
+  font-size: 11px;
+  color: #475569;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.docked-proposta-price {
+  font-size: 15px;
+  font-weight: 900;
+  color: #0056d6;
+  margin-bottom: 8px;
+}
+
+.docked-btn-aprovar {
+  width: 100%;
+  background: #0056d6;
+  color: #ffffff;
+  border: none;
+  padding: 7px;
+  border-radius: 8px;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Input Footer */
+.docked-input-footer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  background: #ffffff;
+  border-top: 1px solid #f1f5f9;
+}
+
+.docked-tools-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.docked-tool-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0056d6;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.docked-tool-btn:hover {
+  background: #f1f5f9;
+}
+
+.docked-input-wrapper {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.docked-text-field {
+  width: 100%;
+  padding: 7px 28px 7px 12px;
+  border-radius: 999px;
+  border: none;
+  background: #f1f5f9;
+  font-size: 13px;
+  outline: none;
+  font-family: inherit;
+  color: #0f172a;
+}
+
+.docked-emoji-btn {
+  position: absolute;
+  right: 6px;
+  border: none;
+  background: none;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.docked-btn-like,
+.docked-btn-send {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.15s;
+  flex-shrink: 0;
+}
+
+.docked-btn-like:hover,
+.docked-btn-send:hover {
+  transform: scale(1.15);
+}
+
+/* Modal Zoom */
+.docked-modal-zoom-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.7);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.docked-modal-zoom-content {
+  position: relative;
+  max-width: 500px;
+  width: 100%;
+  background: #000;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.docked-modal-zoom-img {
+  width: 100%;
+  max-height: 400px;
+  object-fit: contain;
+  display: block;
+}
+
+.docked-modal-zoom-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  border: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 16px;
+}
