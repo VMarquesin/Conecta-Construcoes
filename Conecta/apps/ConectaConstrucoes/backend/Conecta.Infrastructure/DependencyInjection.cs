@@ -27,6 +27,11 @@ public static class DependencyInjection
         // 3. Evolve (Migrações e versionamento de schema do banco)
         services.AddScoped<EvolveDatabaseMigrator>();
 
+        // 4. Repositórios RBAC
+        services.AddScoped<IUsuarioRepository, Repositorios.UsuarioRepository>();
+        services.AddScoped<IRoleRepository, Repositorios.RoleRepository>();
+        services.AddScoped<IPermissaoRepository, Repositorios.PermissaoRepository>();
+
         return services;
     }
 }
