@@ -3,6 +3,8 @@ import Home from '../pages/Home'
 import Busca from '../pages/Busca'
 import PrestadorPerfil from '../pages/PrestadorPerfil'
 import MeusPedidos from '../pages/MeusPedidos'
+import PedidoDetalhe from '../pages/PedidoDetalhe'
+import ChatPedido from '../pages/ChatPedido'
 import AdminLayout from '../core/layout/AdminLayout'
 import AdminDashboard from '../pages/admin/AdminDashboard'
 import UsuariosLista from '../pages/admin/UsuariosLista'
@@ -30,6 +32,14 @@ export default function AppRoutes() {
       {/* Meus Pedidos */}
       <Route path="/pedidos" element={<MeusPedidos />} />
       <Route path="/meus-pedidos" element={<MeusPedidos />} />
+
+      {/* Detalhes do Pedido */}
+      <Route path="/pedidos/:id" element={<PedidoDetalhe />} />
+      <Route path="/pedido/:id" element={<PedidoDetalhe />} />
+
+      {/* Chat com o Prestador */}
+      <Route path="/chat/:id" element={<ChatPedido />} />
+      <Route path="/chat" element={<ChatPedido />} />
 
       {/* Módulo de Administração */}
       <Route path="/admin" element={<AdminLayout />}>

@@ -345,7 +345,7 @@ export default function MeusPedidos() {
 
                     <button
                       className="btn-detalhes-pedido"
-                      onClick={() => setPedidoSelecionado(pedido)}
+                      onClick={() => navigate(pedido.id === 1 ? '/pedidos/1042' : `/pedidos/${pedido.id}`)}
                     >
                       <span>Ver Detalhes</span>
                       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">

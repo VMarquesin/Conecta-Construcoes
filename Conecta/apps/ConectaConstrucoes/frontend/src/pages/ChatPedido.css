@@ -1,0 +1,674 @@
+/* ChatPedido.css */
+
+.chat-viewport {
+  min-height: 100vh;
+  background-color: #f8fafc;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #0f172a;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-container {
+  max-width: 900px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: #ffffff;
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.05);
+}
+
+@media (min-width: 900px) {
+  .chat-container {
+    margin: 20px auto;
+    min-height: calc(100vh - 40px);
+    border-radius: 24px;
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+  }
+}
+
+/* Global Top Header */
+.chat-global-header {
+  background: #ffffff;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+/* Conversation Header (Carlos Silva) */
+.chat-conversation-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.chat-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.chat-back-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #1e293b;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.chat-back-btn:hover {
+  background: #edf2f7;
+}
+
+.chat-prestador-avatar-wrap {
+  position: relative;
+  width: 44px;
+  height: 44px;
+}
+
+.chat-prestador-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.chat-online-badge {
+  position: absolute;
+  bottom: 0px;
+  right: 0px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #10b981;
+  border: 2px solid #ffffff;
+}
+
+.chat-prestador-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-prestador-nome-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chat-prestador-name {
+  font-size: 16px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.chat-verified-icon {
+  display: flex;
+  align-items: center;
+}
+
+.chat-status-text {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.chat-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chat-action-circle {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.chat-action-circle:hover {
+  background: #eff6ff;
+  color: #0056d6;
+  border-color: #bfdbfe;
+}
+
+/* Banner Sticky do Pedido */
+.chat-pedido-sticky-banner {
+  background: #f0f7ff;
+  border-bottom: 1px solid #dbeafe;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sticky-banner-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.sticky-lightning-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: #dbeafe;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sticky-info-col {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sticky-tag-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sticky-pedido-num {
+  font-size: 12px;
+  font-weight: 800;
+  color: #0056d6;
+}
+
+.sticky-status-chip {
+  font-size: 10.5px;
+  font-weight: 700;
+  background: #fef3c7;
+  color: #b45309;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid #fde68a;
+}
+
+.sticky-servico-resumo {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sticky-banner-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.sticky-valor-col {
+  display: flex;
+  flex-direction: column;
+  text-align: right;
+}
+
+.sticky-valor-hint {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.sticky-valor-amount {
+  font-size: 15px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.sticky-btn-aceitar {
+  background: #0056d6;
+  color: #ffffff;
+  border: none;
+  padding: 7px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 6px rgba(0, 86, 214, 0.25);
+}
+
+.sticky-btn-aceitar:hover {
+  background: #0045ab;
+}
+
+/* Área de Mensagens */
+.chat-messages-box {
+  flex: 1;
+  padding: 16px;
+  background: #f8fafc;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Banner de Segurança Conecta Protege */
+.chat-seguranca-banner {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+}
+
+.seguranca-shield {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #eff6ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.seguranca-text {
+  margin: 0;
+  font-size: 12.5px;
+  color: #475569;
+  line-height: 1.4;
+}
+
+.link-protege {
+  color: #0056d6;
+}
+
+/* Divisor de Data */
+.chat-date-divider {
+  display: flex;
+  justify-content: center;
+  margin: 8px 0;
+}
+
+.chat-date-divider span {
+  background: #e2e8f0;
+  color: #475569;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 3px 12px;
+  border-radius: 999px;
+}
+
+/* Linhas de Mensagens */
+.msg-row {
+  display: flex;
+  width: 100%;
+}
+
+.msg-row-user {
+  justify-content: flex-end;
+}
+
+.msg-row-prestador {
+  justify-content: flex-start;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+/* Balão do Usuário (Azul) */
+.msg-bubble-user {
+  max-width: 82%;
+  background: #0056d6;
+  color: #ffffff;
+  padding: 14px 16px;
+  border-radius: 20px 20px 4px 20px;
+  box-shadow: 0 4px 12px rgba(0, 86, 214, 0.2);
+}
+
+.msg-user-text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #ffffff;
+}
+
+.msg-user-image-wrap {
+  border-radius: 14px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  margin-top: 4px;
+}
+
+.msg-attached-img {
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  display: block;
+}
+
+.img-attachment-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  font-size: 11.5px;
+  background: rgba(0, 0, 0, 0.35);
+  color: #f1f5f9;
+}
+
+.msg-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  margin-top: 6px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.msg-meta-dot {
+  opacity: 0.7;
+}
+
+.msg-status {
+  font-weight: 600;
+}
+
+/* Balão do Prestador (Branco) */
+.msg-prestador-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.msg-prestador-content {
+  max-width: 85%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.msg-bubble-prestador {
+  background: #ffffff;
+  color: #0f172a;
+  padding: 14px 16px;
+  border-radius: 20px 20px 20px 4px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+.msg-prestador-text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #1e293b;
+}
+
+.msg-time-left {
+  display: block;
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 6px;
+  text-align: right;
+}
+
+/* Card Proposta Oficial */
+.card-proposta-oficial {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 18px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+}
+
+.proposta-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.proposta-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.proposta-icon-wrap {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #fef3c7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.proposta-label {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+  display: block;
+}
+
+.proposta-heading {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.garantia-pill-verde {
+  background: #ecfdf5;
+  color: #059669;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid #a7f3d0;
+}
+
+.proposta-checklist {
+  background: #f8fafc;
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.check-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12.5px;
+  color: #334155;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.check-item svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.proposta-total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 16px;
+  padding: 0 4px;
+}
+
+.proposta-total-hint {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.proposta-total-val {
+  font-size: 22px;
+  font-weight: 900;
+  color: #0056d6;
+}
+
+.proposta-actions-row {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-proposta-recusar {
+  flex: 0.8;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  padding: 12px;
+  border-radius: 12px;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-proposta-recusar:hover {
+  background: #e2e8f0;
+}
+
+.btn-proposta-aprovar {
+  flex: 1.2;
+  background: #0056d6;
+  border: none;
+  color: #ffffff;
+  padding: 12px;
+  border-radius: 12px;
+  font-size: 13.5px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 86, 214, 0.28);
+  transition: all 0.2s;
+}
+
+.btn-proposta-aprovar:hover {
+  background: #0045ab;
+}
+
+.proposta-status-feedback {
+  padding: 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.status-aprovada {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.status-recusada {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+/* Input Bar Inferior */
+.chat-input-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: #ffffff;
+  border-top: 1px solid #e2e8f0;
+}
+
+.chat-attach-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.chat-attach-btn:hover {
+  background: #eff6ff;
+  color: #0056d6;
+  border-color: #bfdbfe;
+}
+
+.chat-text-input {
+  flex: 1;
+  padding: 12px 16px;
+  border-radius: 999px;
+  border: 1.5px solid #cbd5e1;
+  background: #f8fafc;
+  font-size: 14px;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+
+.chat-text-input:focus {
+  border-color: #0056d6;
+  background: #ffffff;
+}
+
+.chat-send-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: none;
+  background: #0056d6;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 3px 8px rgba(0, 86, 214, 0.25);
+  flex-shrink: 0;
+}
+
+.chat-send-btn:hover {
+  background: #0045ab;
+  transform: scale(1.05);
+}
