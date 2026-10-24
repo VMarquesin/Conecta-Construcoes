@@ -526,8 +526,8 @@ export default function PrestadorPerfil() {
                 </button>
                 <button
                   onClick={() => {
-                    alert('Solicitação de orçamento enviada com sucesso!')
                     setModalOrcamentoAberto(false)
+                    navigate('/pedidos')
                   }}
                   style={{
                     padding: '10px 22px',
@@ -597,7 +597,7 @@ export default function PrestadorPerfil() {
             <span>Buscar</span>
           </Link>
 
-          <Link to="/" className="nav-item">
+          <Link to="/pedidos" className="nav-item">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
               <polyline points="14 2 14 8 20 8" />

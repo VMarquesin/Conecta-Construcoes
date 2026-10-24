@@ -189,6 +189,7 @@ export default function Home() {
             <nav className="desktop-nav">
               <Link to="/" className="desktop-nav-link active">Início</Link>
               <Link to="/busca" className="desktop-nav-link">Buscar Serviços</Link>
+              <Link to="/pedidos" className="desktop-nav-link">Meus Pedidos</Link>
               <a href="#categorias" className="desktop-nav-link">Categorias</a>
               <a href="#profissionais" className="desktop-nav-link">Profissionais</a>
               <Link to="/admin" className="desktop-nav-link">Painel Admin</Link>
@@ -490,7 +491,7 @@ export default function Home() {
             <span>Buscar</span>
           </Link>
 
-          <Link to="/" className="nav-item">
+          <Link to="/pedidos" className="nav-item">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
               <polyline points="14 2 14 8 20 8" />

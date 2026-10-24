@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import Home from '../pages/Home'
 import Busca from '../pages/Busca'
 import PrestadorPerfil from '../pages/PrestadorPerfil'
+import MeusPedidos from '../pages/MeusPedidos'
 import AdminLayout from '../core/layout/AdminLayout'
 import AdminDashboard from '../pages/admin/AdminDashboard'
 import UsuariosLista from '../pages/admin/UsuariosLista'
@@ -25,6 +26,10 @@ export default function AppRoutes() {
       {/* Perfil do Prestador (Vitrine) */}
       <Route path="/prestador/:id" element={<PrestadorPerfil />} />
       <Route path="/prestador" element={<PrestadorPerfil />} />
+
+      {/* Meus Pedidos */}
+      <Route path="/pedidos" element={<MeusPedidos />} />
+      <Route path="/meus-pedidos" element={<MeusPedidos />} />
 
       {/* Módulo de Administração */}
       <Route path="/admin" element={<AdminLayout />}>
