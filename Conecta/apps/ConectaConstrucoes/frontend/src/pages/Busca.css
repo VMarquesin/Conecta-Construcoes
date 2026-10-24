@@ -1,0 +1,596 @@
+/* Busca.css - Estilos da Tela de Resultados de Busca e Categorias */
+
+.busca-viewport {
+  min-height: 100vh;
+  background-color: #f8fafc;
+  color: #0f172a;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+
+.busca-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ============================================================
+   TOP BAR DE BUSCA
+   ============================================================ */
+.busca-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.busca-header-inner {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 12px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.busca-nav-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.back-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0f172a;
+  cursor: pointer;
+  flex-shrink: 0;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.back-btn:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.busca-input-wrapper {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.busca-input {
+  width: 100%;
+  height: 46px;
+  background: #f1f5f9;
+  border: 1.5px solid transparent;
+  border-radius: 999px;
+  padding: 0 42px 0 44px;
+  font-size: 14.5px;
+  font-weight: 500;
+  color: #0f172a;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.busca-input:focus {
+  background: #ffffff;
+  border-color: #0056d6;
+  box-shadow: 0 4px 14px rgba(0, 86, 214, 0.12);
+}
+
+.busca-input-icon {
+  position: absolute;
+  left: 16px;
+  color: #0056d6;
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+}
+
+.busca-clear-btn {
+  position: absolute;
+  right: 14px;
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+}
+
+.busca-clear-btn:hover {
+  color: #475569;
+}
+
+.filter-toggle-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0056d6;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.filter-toggle-btn:hover {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+/* ============================================================
+   BARRA DE STATUS E CONTAGEM (Encontrados / Mapa)
+   ============================================================ */
+.busca-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 2px 4px;
+  font-size: 13.5px;
+}
+
+.busca-count-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.busca-count-info strong {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.busca-count-info svg {
+  color: #0056d6;
+}
+
+.mapa-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #0056d6;
+  font-weight: 700;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+
+.mapa-link-btn:hover {
+  background: #eff6ff;
+  text-decoration: underline;
+}
+
+/* ============================================================
+   FILTROS RÁPIDOS / CHIPS
+   ============================================================ */
+.chips-scroll {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 4px 2px 8px;
+  scrollbar-width: none;
+}
+
+.chips-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #334155;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.filter-chip:hover {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.filter-chip.active {
+  background: #0056d6;
+  border-color: #0056d6;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 86, 214, 0.25);
+}
+
+.filter-chip.active svg {
+  color: #ffffff;
+}
+
+.chip-online-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+}
+
+/* ============================================================
+   CORPO PRINCIPAL (LISTA DE PRESTADORES)
+   ============================================================ */
+.busca-main {
+  max-width: 1240px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 18px 20px 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.busca-cards-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+/* Cartão do Profissional */
+.search-prof-card {
+  background: #ffffff;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+  padding: 20px;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.04);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transition: all 0.2s ease;
+}
+
+.search-prof-card:hover {
+  border-color: #93c5fd;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.08);
+  transform: translateY(-2px);
+}
+
+/* Badge Superior de Destaque */
+.card-featured-badge {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #eef2ff;
+  color: #3730a3;
+  border: 1px solid #c7d2fe;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.search-prof-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.search-avatar-wrapper {
+  position: relative;
+  width: 62px;
+  height: 62px;
+  flex-shrink: 0;
+}
+
+.search-avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.search-check-badge {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 19px;
+  height: 19px;
+  background-color: #0056d6;
+  color: #ffffff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #ffffff;
+}
+
+.search-check-badge.super {
+  background-color: #f59e0b;
+}
+
+.search-info-block {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+}
+
+.search-prof-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.search-prof-name {
+  font-size: 17px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+.search-pill-verificado {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #eff6ff;
+  color: #0284c7;
+  border: 1px solid #bfdbfe;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.search-pill-super {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fed7aa;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.search-prof-sub {
+  font-size: 13.5px;
+  color: #64748b;
+  margin: 0;
+}
+
+.search-rating-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  margin-top: 2px;
+}
+
+.search-star {
+  color: #f59e0b;
+}
+
+.search-rating-score {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.search-rating-reviews {
+  color: #94a3b8;
+}
+
+/* Faixa de Localização / Raio */
+.location-radius-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 12.5px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 999px;
+  width: fit-content;
+}
+
+.location-radius-pill svg {
+  color: #0056d6;
+}
+
+/* Tags / Especialidades */
+.specialties-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.specialty-tag {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+
+/* Rodapé do Card (Preço e Botões) */
+.search-card-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 12px;
+  border-top: 1px solid #f1f5f9;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.search-price-block {
+  display: flex;
+  flex-direction: column;
+}
+
+.search-price-label {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.search-price-val {
+  font-size: 17px;
+  font-weight: 800;
+  color: #0056d6;
+}
+
+.search-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-ver-perfil {
+  padding: 9px 16px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  color: #1e293b;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-ver-perfil:hover {
+  background: #e2e8f0;
+  color: #0056d6;
+}
+
+.btn-conversar {
+  padding: 9px 18px;
+  border-radius: 999px;
+  background: #0056d6;
+  border: 1px solid #0056d6;
+  color: #ffffff;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 4px 12px rgba(0, 86, 214, 0.2);
+  transition: all 0.15s ease;
+}
+
+.btn-conversar:hover {
+  background: #0042a5;
+}
+
+/* ============================================================
+   BANNER DE GARANTIA INFERIOR
+   ============================================================ */
+.conecta-protege-card {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 20px;
+  padding: 18px 22px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 4px 14px rgba(0, 86, 214, 0.04);
+}
+
+.protege-icon-circle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0056d6;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 86, 214, 0.1);
+}
+
+.protege-text-block {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.protege-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+.protege-desc {
+  font-size: 13px;
+  color: #475569;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* ============================================================
+   RESPONSIVIDADE (DESKTOP)
+   ============================================================ */
+@media (min-width: 768px) {
+  .busca-cards-list {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1100px) {
+  .busca-cards-list {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 767px) {
+  .busca-viewport {
+    align-items: center;
+  }
+
+  .busca-container {
+    max-width: 540px;
+    background: #ffffff;
+    padding-bottom: 74px;
+  }
+}
