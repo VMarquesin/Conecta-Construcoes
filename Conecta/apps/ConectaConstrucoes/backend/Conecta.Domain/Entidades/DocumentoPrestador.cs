@@ -1,0 +1,16 @@
+namespace Conecta.Domain.Entidades;
+
+public class DocumentoPrestador
+{
+    public int Id { get; set; }
+    public int PrestadorId { get; set; }
+    public string TipoDocumento { get; set; } = string.Empty;
+    public string ArquivoUrl { get; set; } = string.Empty;
+    public string Status { get; set; } = "PENDENTE"; // PENDENTE, APROVADO, REJEITADO
+    public string? MotivoRejeicao { get; set; }
+    public DateTime SubmetidoEm { get; set; } = DateTime.UtcNow;
+    public DateTime? AnalisadoEm { get; set; }
+    public int? AnalisadoPor { get; set; }
+
+    public Prestador Prestador { get; set; } = null!;
+}
