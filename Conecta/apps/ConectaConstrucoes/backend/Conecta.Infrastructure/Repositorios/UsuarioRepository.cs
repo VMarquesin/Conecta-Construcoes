@@ -125,4 +125,66 @@ public class UsuarioRepository : IUsuarioRepository
         return await _context.UsuarioRoles
             .AnyAsync(ur => ur.UsuarioId == usuarioId && ur.RoleId == roleId);
     }
+
+    public async Task AdicionarClienteAsync(Cliente cliente)
+    {
+        cliente.CriadoEm = DateTime.UtcNow;
+        cliente.AtualizadoEm = DateTime.UtcNow;
+        await _context.Clientes.AddAsync(cliente);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task AdicionarPrestadorAsync(Prestador prestador)
+    {
+        prestador.CriadoEm = DateTime.UtcNow;
+        prestador.AtualizadoEm = DateTime.UtcNow;
+        await _context.Prestadores.AddAsync(prestador);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task AdicionarEnderecoAsync(Endereco endereco)
+    {
+        endereco.CriadoEm = DateTime.UtcNow;
+        endereco.AtualizadoEm = DateTime.UtcNow;
+        await _context.Enderecos.AddAsync(endereco);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task AdicionarTelefoneAsync(Telefone telefone)
+    {
+        telefone.CriadoEm = DateTime.UtcNow;
+        await _context.Telefones.AddAsync(telefone);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task<Cidade> ObterOuCriarCidadeAsync(string nomeCidade, string siglaEstado)
+    {
+        var siglaUpper = siglaEstado.Trim().ToUpper();
+        var estado = await _context.Estados.FirstOrDefaultAsync(e => e.Sigla == siglaUpper);
+        if (estado == null)
+        {
+            estado = new Estado
+            {
+                Sigla = siglaUpper,
+                Nome = siglaUpper == "SP" ? "São Paulo" : siglaUpper
+            };
+            await _context.Estados.AddAsync(estado);
+            await _context.SaveChangesAsync();
+        }
+
+        var nomeNorm = nomeCidade.Trim();
+        var cidade = await _context.Cidades.FirstOrDefaultAsync(c => c.EstadoId == estado.Id && c.Nome.ToLower() == nomeNorm.ToLower());
+        if (cidade == null)
+        {
+            cidade = new Cidade
+            {
+                EstadoId = estado.Id,
+                Nome = nomeNorm
+            };
+            await _context.Cidades.AddAsync(cidade);
+            await _context.SaveChangesAsync();
+        }
+
+        return cidade;
+    }
 }

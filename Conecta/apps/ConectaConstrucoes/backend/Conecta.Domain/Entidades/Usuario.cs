@@ -6,12 +6,25 @@ public class Usuario
     public string Nome { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string SenhaHash { get; set; } = string.Empty;
-    public string Tipo { get; set; } = "CLIENTE";
+    public string Perfil { get; set; } = "CLIENTE"; // PRESTADOR, CLIENTE, ADMIN
+    public string Tipo { get => Perfil; set => Perfil = value; }
+    public bool Ativo { get; set; } = true;
+    public string? Documento { get; set; }
+    public bool Verificado { get; set; } = false;
+    public string? FotoPerfilUrl { get; set; }
+    public decimal MediaAvaliacao { get; set; } = 0.00m;
+    public int TotalAvaliacoes { get; set; } = 0;
+    public DateTime? TermosAceitosEm { get; set; }
     public string StatusVerificacao { get; set; } = "COMPLETO";
     public string StatusConta { get; set; } = "ATIVA";
     public DateTime? UltimoAcessoEm { get; set; }
     public DateTime CriadoEm { get; set; } = DateTime.UtcNow;
     public DateTime AtualizadoEm { get; set; } = DateTime.UtcNow;
 
+    // Propriedades de navegação
+    public Cliente? Cliente { get; set; }
+    public Prestador? Prestador { get; set; }
     public ICollection<UsuarioRole> UsuarioRoles { get; set; } = new List<UsuarioRole>();
+    public ICollection<Endereco> Enderecos { get; set; } = new List<Endereco>();
+    public ICollection<Telefone> Telefones { get; set; } = new List<Telefone>();
 }

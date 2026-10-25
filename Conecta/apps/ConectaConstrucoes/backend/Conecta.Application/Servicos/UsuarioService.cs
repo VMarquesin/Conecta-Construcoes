@@ -10,15 +10,18 @@ public class UsuarioService : IUsuarioService
     private readonly IUsuarioRepository _usuarioRepository;
     private readonly IRoleRepository _roleRepository;
     private readonly IPasswordHasher _passwordHasher;
+    private readonly ITokenService? _tokenService;
 
     public UsuarioService(
         IUsuarioRepository usuarioRepository,
         IRoleRepository roleRepository,
-        IPasswordHasher passwordHasher)
+        IPasswordHasher passwordHasher,
+        ITokenService? tokenService = null)
     {
         _usuarioRepository = usuarioRepository;
         _roleRepository = roleRepository;
         _passwordHasher = passwordHasher;
+        _tokenService = tokenService;
     }
 
     public async Task<UsuarioResponse?> ObterPorIdAsync(int id)
@@ -90,6 +93,122 @@ public class UsuarioService : IUsuarioService
 
         var recarregado = await _usuarioRepository.ObterPorIdAsync(criado.Id);
         return MapearParaResponse(recarregado ?? criado);
+    }
+
+    public async Task<RegistroUsuarioResponse> RegistrarAsync(RegistroUsuarioRequest request)
+    {
+        var existente = await _usuarioRepository.ObterPorEmailAsync(request.Email);
+        if (existente != null)
+        {
+            throw new InvalidOperationException($"Já existe um usuário cadastrado com o e-mail '{request.Email}'.");
+        }
+
+        var perfilNormalizado = string.IsNullOrWhiteSpace(request.Perfil)
+            ? "CLIENTE"
+            : request.Perfil.Trim().ToUpper();
+
+        var senhaHash = _passwordHasher.Hash(request.Senha);
+        var usuario = new Usuario
+        {
+            Nome = request.Nome.Trim(),
+            Email = request.Email.Trim().ToLower(),
+            SenhaHash = senhaHash,
+            Perfil = perfilNormalizado,
+            Documento = request.Documento?.Trim(),
+            StatusConta = "ATIVA",
+            StatusVerificacao = "COMPLETO"
+        };
+
+        var criado = await _usuarioRepository.AdicionarAsync(usuario);
+
+        // Atribuir Role padrão (CLIENTE ou PRESTADOR)
+        var role = await _roleRepository.ObterPorNomeAsync(perfilNormalizado);
+        if (role != null)
+        {
+            await _usuarioRepository.AdicionarRoleAsync(criado.Id, role.Id);
+        }
+
+        // Criar registro de perfil correspondente
+        if (perfilNormalizado == "PRESTADOR")
+        {
+            var prestador = new Prestador
+            {
+                UsuarioId = criado.Id,
+                NomeFantasia = request.DadosPrestador?.NomeFantasia?.Trim() ?? request.Nome.Trim(),
+                Bio = request.DadosPrestador?.Bio?.Trim(),
+                ExperienciaAnos = request.DadosPrestador?.ExperienciaAnos,
+                ValorHoraInicial = request.DadosPrestador?.ValorHoraInicial,
+                RaioAtendimentoKm = request.DadosPrestador?.RaioAtendimentoKm ?? 15,
+                Latitude = request.Endereco?.Latitude ?? 0,
+                Longitude = request.Endereco?.Longitude ?? 0,
+                StatusDisponibilidade = "DISPONIVEL"
+            };
+            await _usuarioRepository.AdicionarPrestadorAsync(prestador);
+        }
+        else
+        {
+            var cliente = new Cliente
+            {
+                UsuarioId = criado.Id,
+                Ativo = true
+            };
+            await _usuarioRepository.AdicionarClienteAsync(cliente);
+        }
+
+        // Telefone
+        if (!string.IsNullOrWhiteSpace(request.Telefone))
+        {
+            var telefone = new Telefone
+            {
+                UsuarioId = criado.Id,
+                Numero = request.Telefone.Trim(),
+                Principal = true,
+                Tipo = "WHATSAPP"
+            };
+            await _usuarioRepository.AdicionarTelefoneAsync(telefone);
+        }
+
+        // Endereço
+        if (request.Endereco != null)
+        {
+            var cidade = await _usuarioRepository.ObterOuCriarCidadeAsync(
+                request.Endereco.Cidade,
+                request.Endereco.Estado
+            );
+
+            var endereco = new Endereco
+            {
+                UsuarioId = criado.Id,
+                CidadeId = cidade.Id,
+                Bairro = request.Endereco.Bairro?.Trim(),
+                Cep = request.Endereco.Cep?.Trim(),
+                Logradouro = request.Endereco.Logradouro?.Trim() ?? "",
+                Numero = request.Endereco.Numero?.Trim() ?? "S/N",
+                Complemento = request.Endereco.Complemento?.Trim(),
+                CidadeNome = request.Endereco.Cidade?.Trim() ?? "",
+                EstadoSigla = request.Endereco.Estado?.Trim().ToUpper() ?? "SP",
+                Latitude = request.Endereco.Latitude,
+                Longitude = request.Endereco.Longitude,
+                Principal = true
+            };
+            await _usuarioRepository.AdicionarEnderecoAsync(endereco);
+        }
+
+        var rolesList = new List<string> { perfilNormalizado };
+        var expiracao = DateTime.UtcNow.AddHours(24);
+        var token = _tokenService != null
+            ? _tokenService.GerarToken(criado, rolesList, new List<string>())
+            : string.Empty;
+
+        return new RegistroUsuarioResponse(
+            criado.Id,
+            criado.Nome,
+            criado.Email,
+            criado.Perfil,
+            token,
+            expiracao,
+            rolesList
+        );
     }
 
     public async Task<UsuarioResponse> AtualizarAsync(int id, AtualizarUsuarioRequest request)

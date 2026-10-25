@@ -16,4 +16,10 @@ public interface IUsuarioRepository
     Task AdicionarRoleAsync(int usuarioId, int roleId);
     Task RemoverRoleAsync(int usuarioId, int roleId);
     Task<bool> UsuarioPossuiRoleAsync(int usuarioId, int roleId);
+
+    Task AdicionarClienteAsync(Cliente cliente);
+    Task AdicionarPrestadorAsync(Prestador prestador);
+    Task AdicionarEnderecoAsync(Endereco endereco);
+    Task AdicionarTelefoneAsync(Telefone telefone);
+    Task<Cidade> ObterOuCriarCidadeAsync(string nomeCidade, string siglaEstado);
 }

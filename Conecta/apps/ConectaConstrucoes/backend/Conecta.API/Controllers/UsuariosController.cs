@@ -51,23 +51,48 @@ public class UsuariosController : ControllerBase
     }
 
     /// <summary>
-    /// Cadastra um novo usuário na plataforma.
+    /// Cadastra um novo usuário na plataforma com endereço e dados de perfil (Cliente ou Prestador).
     /// </summary>
-    [HttpPost]
-    [AllowAnonymous] // Permite novos cadastros de clientes/prestadores
-    [ProducesResponseType(typeof(UsuarioResponse), StatusCodes.Status201Created)]
+    [HttpPost("registro")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(RegistroUsuarioResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Criar([FromBody] CriarUsuarioRequest request)
+    public async Task<IActionResult> Registrar([FromBody] RegistroUsuarioRequest request)
     {
         try
         {
-            var novoUsuario = await _usuarioService.CriarAsync(request);
-            return CreatedAtAction(nameof(ObterPorId), new { id = novoUsuario.Id }, novoUsuario);
+            var resultado = await _usuarioService.RegistrarAsync(request);
+            return CreatedAtAction(nameof(ObterPorId), new { id = resultado.Id }, resultado);
         }
         catch (InvalidOperationException ex)
         {
             return BadRequest(new { mensagem = ex.Message });
         }
+    }
+
+    /// <summary>
+    /// Obtém dados do usuário autenticado no token JWT atual.
+    /// </summary>
+    [HttpGet("me")]
+    [Authorize]
+    [ProducesResponseType(typeof(UsuarioResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ObterPerfilAutenticado()
+    {
+        var idClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (!int.TryParse(idClaim, out var usuarioId))
+        {
+            return Unauthorized(new { mensagem = "Identificador de usuário inválido no token." });
+        }
+
+        var usuario = await _usuarioService.ObterPorIdAsync(usuarioId);
+        if (usuario == null)
+        {
+            return NotFound(new { mensagem = "Usuário autenticado não encontrado." });
+        }
+
+        return Ok(usuario);
     }
 
     /// <summary>
