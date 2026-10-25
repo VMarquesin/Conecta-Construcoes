@@ -1,0 +1,257 @@
+using Conecta.Application.DTOs;
+using Conecta.Domain.Entidades;
+using Conecta.Domain.Interfaces;
+
+namespace Conecta.Application.Servicos;
+
+public class PedidoService : IPedidoService
+{
+    private readonly IPedidoRepository _pedidoRepository;
+    private readonly ISolicitacaoRepository _solicitacaoRepository;
+
+    public PedidoService(
+        IPedidoRepository pedidoRepository,
+        ISolicitacaoRepository solicitacaoRepository)
+    {
+        _pedidoRepository = pedidoRepository;
+        _solicitacaoRepository = solicitacaoRepository;
+    }
+
+    public async Task<IEnumerable<PedidoResumoResponse>> ListarMeusPedidosAsync(int usuarioId, string? status = null)
+    {
+        var dbStatus = status?.ToLower() switch
+        {
+            "pendente" => "AGUARDANDO_ACEITE",
+            "aceito" => "AGENDADO",
+            "concluido" => "CONCLUIDO",
+            _ => null
+        };
+
+        var pedidos = await _pedidoRepository.ListarPorUsuarioAsync(usuarioId, dbStatus);
+
+        return pedidos.Select(p =>
+        {
+            var statusAba = p.Status.ToUpper() switch
+            {
+                "AGUARDANDO_ACEITE" => "pendente",
+                "AGENDADO" or "EM_EXECUCAO" => "aceito",
+                "CONCLUIDO" => "concluido",
+                _ => "pendente"
+            };
+
+            var statusTexto = p.Status.ToUpper() switch
+            {
+                "AGUARDANDO_ACEITE" => "Pendente",
+                "AGENDADO" => "Aceito",
+                "EM_EXECUCAO" => "Em Execução",
+                "CONCLUIDO" => "Concluído",
+                "CANCELADO" => "Cancelado",
+                _ => p.Status
+            };
+
+            var valorLabel = p.Status.ToUpper() switch
+            {
+                "AGUARDANDO_ACEITE" => "Orçamento Estimado",
+                "AGENDADO" or "EM_EXECUCAO" => "Valor Fechado",
+                "CONCLUIDO" => "Valor Pago",
+                _ => "Valor Previsto"
+            };
+
+            var valor = p.ValorFinal ?? p.ValorCombinado;
+            var valorTexto = valor.HasValue ? $"R$ {valor.Value:F2}" : "A combinar";
+            var valorIsPreco = valor.HasValue;
+
+            var statusDica = p.Status.ToUpper() switch
+            {
+                "AGUARDANDO_ACEITE" => "Aguardando resposta",
+                "AGENDADO" => p.AgendadoPara.HasValue ? $"Agendado para {p.AgendadoPara.Value:dd/MM, HH:mm}" : "Agendamento confirmado",
+                "EM_EXECUCAO" => "Serviço em andamento",
+                "CONCLUIDO" => "Serviço finalizado com garantia Conecta",
+                _ => "Cancelado"
+            };
+
+            var dicaIcone = p.Status.ToUpper() switch
+            {
+                "AGUARDANDO_ACEITE" => "clock",
+                "AGENDADO" => "calendar",
+                "CONCLUIDO" => "check",
+                _ => "truck"
+            };
+
+            var prestadorNome = p.Prestador?.NomeFantasia ?? p.Prestador?.Usuario?.Nome ?? "Prestador";
+            var prestadorAvatar = p.Prestador?.Usuario?.FotoPerfilUrl ?? p.Prestador?.CapaUrl ?? "";
+            var prestadorProfissao = !string.IsNullOrWhiteSpace(p.Prestador?.NomeFantasia)
+                ? p.Prestador.NomeFantasia
+                : "Profissional Verificado";
+
+            return new PedidoResumoResponse(
+                Id: p.Id,
+                PrestadorId: p.PrestadorId,
+                PrestadorNome: prestadorNome,
+                PrestadorProfissao: prestadorProfissao,
+                PrestadorAvatar: prestadorAvatar,
+                SolicitadoEm: FormatarDataAmigavel(p.DataSolicitacao),
+                Status: statusAba,
+                StatusTexto: statusTexto,
+                TituloServico: p.DescricaoNecessidade.Length > 50 ? p.DescricaoNecessidade[..50] + "..." : p.DescricaoNecessidade,
+                DescricaoServico: p.DescricaoNecessidade,
+                ValorLabel: valorLabel,
+                ValorTexto: valorTexto,
+                ValorIsPreco: valorIsPreco,
+                StatusDica: statusDica,
+                DicaIcone: dicaIcone
+            );
+        });
+    }
+
+    public async Task<PedidoDetalheResponse?> ObterDetalhesAsync(int pedidoId, int usuarioId)
+    {
+        var p = await _pedidoRepository.ObterPorIdAsync(pedidoId);
+        if (p == null) return null;
+
+        if (p.ClienteId != usuarioId && p.PrestadorId != usuarioId)
+        {
+            throw new UnauthorizedAccessException("Você não tem acesso aos dados deste pedido.");
+        }
+
+        var statusTexto = p.Status.ToUpper() switch
+        {
+            "AGUARDANDO_ACEITE" => "Aguardando Aceite",
+            "AGENDADO" => "Aceito",
+            "EM_EXECUCAO" => "Em Execução",
+            "CONCLUIDO" => "Concluído",
+            "CANCELADO" => "Cancelado",
+            _ => p.Status
+        };
+
+        PropostaResponse? propostaDto = null;
+        if (p.Proposta != null)
+        {
+            propostaDto = new PropostaResponse(
+                p.Proposta.Id,
+                p.Proposta.SolicitacaoId,
+                p.Proposta.PrestadorId,
+                p.Proposta.ValorTotal,
+                p.Proposta.PrazoDias,
+                p.Proposta.Descricao,
+                p.Proposta.Status,
+                p.Proposta.CriadoEm,
+                p.Proposta.Itens.Select(i => new ItemPropostaResponse(i.Id, i.Descricao ?? "", i.Valor, i.Quantidade)).ToList()
+            );
+        }
+
+        var prestadorNome = p.Prestador?.NomeFantasia ?? p.Prestador?.Usuario?.Nome ?? "Prestador";
+        var prestadorAvatar = p.Prestador?.Usuario?.FotoPerfilUrl ?? p.Prestador?.CapaUrl ?? "";
+        var prestadorProfissao = !string.IsNullOrWhiteSpace(p.Prestador?.NomeFantasia)
+            ? p.Prestador.NomeFantasia
+            : "Profissional Verificado";
+
+        var clienteNome = p.Cliente?.Usuario?.Nome ?? "Cliente";
+        var podeAvaliar = p.Status == "CONCLUIDO" && p.Avaliacao == null && p.ClienteId == usuarioId;
+        var jaAvaliado = p.Avaliacao != null;
+
+        return new PedidoDetalheResponse(
+            Id: p.Id,
+            ClienteId: p.ClienteId,
+            ClienteNome: clienteNome,
+            PrestadorId: p.PrestadorId,
+            PrestadorNome: prestadorNome,
+            PrestadorProfissao: prestadorProfissao,
+            PrestadorAvatar: prestadorAvatar,
+            TituloServico: p.DescricaoNecessidade.Length > 50 ? p.DescricaoNecessidade[..50] + "..." : p.DescricaoNecessidade,
+            DescricaoServico: p.DescricaoNecessidade,
+            Status: p.Status,
+            StatusTexto: statusTexto,
+            ValorCombinado: p.ValorCombinado,
+            ValorFinal: p.ValorFinal,
+            DataCriacao: p.DataSolicitacao,
+            AgendadoPara: p.AgendadoPara,
+            ConcluidoEm: p.ConcluidoEm,
+            EnderecoAtendimento: p.EnderecoAtendimento,
+            Proposta: propostaDto,
+            PodeAvaliar: podeAvaliar,
+            JaAvaliado: jaAvaliado
+        );
+    }
+
+    public async Task<PedidoDetalheResponse> AceitarPropostaECriarPedidoAsync(int clienteId, int propostaId)
+    {
+        var proposta = await _solicitacaoRepository.ObterPropostaPorIdAsync(propostaId)
+            ?? throw new KeyNotFoundException($"Proposta #{propostaId} não encontrada.");
+
+        if (proposta.Solicitacao.ClienteId != clienteId)
+        {
+            throw new UnauthorizedAccessException("Apenas o cliente solicitante pode aceitar a proposta comercial.");
+        }
+
+        // Atualiza proposta e solicitacao
+        await _solicitacaoRepository.AtualizarStatusPropostaAsync(propostaId, "ACEITA");
+        await _solicitacaoRepository.AtualizarStatusAsync(proposta.SolicitacaoId, "ACEITA");
+
+        // Cria o pedido com status AGUARDANDO_ACEITE (Requisito CON_017)
+        var pedido = new Pedido
+        {
+            ClienteId = clienteId,
+            PrestadorId = proposta.PrestadorId,
+            PropostaId = proposta.Id,
+            EnderecoAtendimento = proposta.Solicitacao.EnderecoAtendimento,
+            DescricaoNecessidade = proposta.Solicitacao.Descricao,
+            Status = "AGUARDANDO_ACEITE",
+            ValorCombinado = proposta.ValorTotal,
+            ValorFinal = proposta.ValorTotal,
+            DataSolicitacao = DateTime.UtcNow
+        };
+
+        var criado = await _pedidoRepository.AdicionarAsync(pedido);
+        var detalhe = await ObterDetalhesAsync(criado.Id, clienteId);
+        return detalhe!;
+    }
+
+    public async Task ConfirmarPagamentoGarantiaAsync(int clienteId, int pedidoId, PagamentoPedidoRequest request)
+    {
+        var pedido = await _pedidoRepository.ObterPorIdAsync(pedidoId)
+            ?? throw new KeyNotFoundException($"Pedido #{pedidoId} não encontrado.");
+
+        if (pedido.ClienteId != clienteId)
+        {
+            throw new UnauthorizedAccessException("Apenas o cliente responsável pode confirmar o pagamento.");
+        }
+
+        // Evolui status para AGENDADO com valor retido em garantia
+        await _pedidoRepository.AtualizarStatusAsync(pedidoId, "AGENDADO");
+    }
+
+    public async Task CancelarPedidoAsync(int usuarioId, int pedidoId)
+    {
+        var pedido = await _pedidoRepository.ObterPorIdAsync(pedidoId)
+            ?? throw new KeyNotFoundException($"Pedido #{pedidoId} não encontrado.");
+
+        if (pedido.ClienteId != usuarioId && pedido.PrestadorId != usuarioId)
+        {
+            throw new UnauthorizedAccessException("Você não tem permissão para cancelar este pedido.");
+        }
+
+        await _pedidoRepository.AtualizarStatusAsync(pedidoId, "CANCELADO");
+    }
+
+    public async Task ConcluirPedidoAsync(int prestadorId, int pedidoId)
+    {
+        var pedido = await _pedidoRepository.ObterPorIdAsync(pedidoId)
+            ?? throw new KeyNotFoundException($"Pedido #{pedidoId} não encontrado.");
+
+        if (pedido.PrestadorId != prestadorId)
+        {
+            throw new UnauthorizedAccessException("Apenas o prestador pode marcar o pedido como concluído.");
+        }
+
+        await _pedidoRepository.AtualizarStatusAsync(pedidoId, "CONCLUIDO");
+    }
+
+    private static string FormatarDataAmigavel(DateTime data)
+    {
+        var hoje = DateTime.UtcNow.Date;
+        if (data.Date == hoje) return $"Hoje, {data:HH:mm}";
+        if (data.Date == hoje.AddDays(-1)) return $"Ontem, {data:HH:mm}";
+        return data.ToString("dd 'de' MMMM");
+    }
+}
