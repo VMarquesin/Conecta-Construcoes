@@ -6,6 +6,9 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 
+// Desliga a verificação restrita de UTC do Npgsql para compatibilidade global com timestamps
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
 var builder = WebApplication.CreateBuilder(args);
 
 // 1. Configurar serviços da Camada de Infraestrutura (EF Core, Dapper e Evolve)
@@ -43,8 +46,12 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
-// 4. Configurar Controllers
-builder.Services.AddControllers();
+// 4. Configurar Controllers com suporte a Enums como string no JSON
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+    });
 
 // 5. Configurar Swagger / OpenAPI com suporte a Bearer Token (RBAC)
 builder.Services.AddEndpointsApiExplorer();

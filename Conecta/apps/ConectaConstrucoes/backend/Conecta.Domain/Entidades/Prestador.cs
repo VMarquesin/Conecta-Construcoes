@@ -1,3 +1,5 @@
+using Conecta.Domain.Enums;
+
 namespace Conecta.Domain.Entidades;
 
 public class Prestador
@@ -11,7 +13,7 @@ public class Prestador
     public decimal Latitude { get; set; } = 0;
     public decimal Longitude { get; set; } = 0;
     public int RaioAtendimentoKm { get; set; } = 15;
-    public string StatusDisponibilidade { get; set; } = "DISPONIVEL"; // DISPONIVEL, OCUPADO, AUSENTE, INATIVO
+    public StatusDisponibilidade StatusDisponibilidade { get; set; } = StatusDisponibilidade.DISPONIVEL;
     public char PlanoAssinatura { get; set; } = 'G'; // 'G' Grátis, 'P' Premium
     public bool DestaqueRegiao { get; set; } = false;
     public bool SeloSuperprestador { get; set; } = false;

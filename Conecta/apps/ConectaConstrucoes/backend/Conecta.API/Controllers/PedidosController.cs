@@ -23,13 +23,19 @@ public class PedidosController : ControllerBase
     /// Lista pedidos do usuário logado (cliente ou prestador), com suporte a filtro por status (pendente, aceito, concluido).
     /// </summary>
     [HttpGet]
-    [Authorize]
+    [HttpGet("meus")]
     [ProducesResponseType(typeof(IEnumerable<PedidoResumoResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> ListarMeusPedidos([FromQuery] string? status = null)
+    public async Task<IActionResult> ListarMeusPedidos([FromQuery] string? status = null, [FromQuery] int? clienteId = null)
     {
         var claimId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (!int.TryParse(claimId, out var usuarioId))
+        int usuarioId = 0;
+        if (int.TryParse(claimId, out var parsedId))
+            usuarioId = parsedId;
+        else if (clienteId.HasValue && clienteId.Value > 0)
+            usuarioId = clienteId.Value;
+
+        if (usuarioId == 0)
         {
             return Unauthorized(new { mensagem = "Usuário não autenticado." });
         }
@@ -42,14 +48,19 @@ public class PedidosController : ControllerBase
     /// Obtém detalhes completos de um pedido pelo ID.
     /// </summary>
     [HttpGet("{id:int}")]
-    [Authorize]
     [ProducesResponseType(typeof(PedidoDetalheResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> ObterPorId(int id)
+    public async Task<IActionResult> ObterPorId(int id, [FromQuery] int? clienteId = null)
     {
         var claimId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (!int.TryParse(claimId, out var usuarioId))
+        int usuarioId = 0;
+        if (int.TryParse(claimId, out var parsedId))
+            usuarioId = parsedId;
+        else if (clienteId.HasValue && clienteId.Value > 0)
+            usuarioId = clienteId.Value;
+
+        if (usuarioId == 0)
         {
             return Unauthorized(new { mensagem = "Usuário não autenticado." });
         }

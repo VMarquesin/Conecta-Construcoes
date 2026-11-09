@@ -27,6 +27,19 @@ public class ChatRepository : IChatRepository
             .FirstOrDefaultAsync(c => c.Id == id);
     }
 
+    public async Task<Conversa?> ObterPorPedidoIdAsync(int pedidoId)
+    {
+        return await _context.Conversas
+            .Include(c => c.Cliente)
+                .ThenInclude(cl => cl.Usuario)
+            .Include(c => c.Prestador)
+                .ThenInclude(pr => pr.Usuario)
+            .Include(c => c.Pedido)
+            .Include(c => c.Mensagens)
+                .ThenInclude(m => m.Anexos)
+            .FirstOrDefaultAsync(c => c.PedidoId == pedidoId);
+    }
+
     public async Task<Conversa?> ObterOuCriarAsync(int clienteId, int prestadorId, int? pedidoId = null)
     {
         var conversa = await _context.Conversas

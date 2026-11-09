@@ -1,5 +1,6 @@
 using Conecta.Application.DTOs;
 using Conecta.Domain.Entidades;
+using Conecta.Domain.Enums;
 using Conecta.Domain.Interfaces;
 
 namespace Conecta.Application.Servicos;
@@ -9,15 +10,18 @@ public class ProService : IProService
     private readonly IPrestadorRepository _prestadorRepository;
     private readonly ISolicitacaoRepository _solicitacaoRepository;
     private readonly IPedidoRepository _pedidoRepository;
+    private readonly IPedidoService _pedidoService;
 
     public ProService(
         IPrestadorRepository prestadorRepository,
         ISolicitacaoRepository solicitacaoRepository,
-        IPedidoRepository pedidoRepository)
+        IPedidoRepository pedidoRepository,
+        IPedidoService pedidoService)
     {
         _prestadorRepository = prestadorRepository;
         _solicitacaoRepository = solicitacaoRepository;
         _pedidoRepository = pedidoRepository;
+        _pedidoService = pedidoService;
     }
 
     public async Task<ProDashboardResponse> ObterDashboardAsync(int prestadorId)
@@ -58,7 +62,7 @@ public class ProService : IProService
             GanhosSemana: ganhosSemana
         );
 
-        var disponivel = prestador.StatusDisponibilidade == "DISPONIVEL";
+        var disponivel = prestador.StatusDisponibilidade == StatusDisponibilidade.DISPONIVEL;
         var profissao = !string.IsNullOrWhiteSpace(prestador.NomeFantasia)
             ? prestador.NomeFantasia
             : "Eletricista Residencial e Predial em Tupã";
@@ -75,15 +79,56 @@ public class ProService : IProService
         );
     }
 
+    public async Task<ProEstatisticasResponse?> ObterEstatisticasAsync(int prestadorId)
+    {
+        var stats = await _prestadorRepository.ObterEstatisticasAsync(prestadorId);
+        if (stats == null) return null;
+
+        return new ProEstatisticasResponse(
+            stats.UsuarioId,
+            stats.Nome,
+            stats.TotalPedidos,
+            stats.TotalAvaliacoes,
+            stats.MediaAvaliacoes,
+            stats.TotalServicosRealizados
+        );
+    }
+
+    public async Task<IEnumerable<ProSolicitacaoPendenteDto>> ListarSolicitacoesAbertasAsync(int prestadorId)
+    {
+        var solicitacoesPendentes = await _solicitacaoRepository.ListarPendentesPorPrestadorAsync(prestadorId);
+        return solicitacoesPendentes.Select(s =>
+        {
+            var tempoMinutos = (int)Math.Max(1, (DateTime.UtcNow - s.CriadoEm).TotalMinutes);
+            var tempoTexto = tempoMinutos < 60 ? $"{tempoMinutos} min" : $"{tempoMinutos / 60} h";
+
+            return new ProSolicitacaoPendenteDto(
+                Id: s.Id.ToString(),
+                ClienteNome: s.Cliente?.Usuario?.Nome ?? "Cliente",
+                ClienteAvatar: s.Cliente?.Usuario?.FotoPerfilUrl ?? "",
+                TempoRelativo: tempoTexto,
+                LocalTexto: s.EnderecoAtendimento ?? "Região Central",
+                Tags: new List<string> { s.Titulo.Length > 20 ? s.Titulo[..20] : s.Titulo },
+                IsUrgente: s.Descricao.Contains("urgente", StringComparison.OrdinalIgnoreCase) || s.Titulo.Contains("urgente", StringComparison.OrdinalIgnoreCase),
+                Descricao: s.Descricao
+            );
+        });
+    }
+
+    public async Task<IEnumerable<PedidoResumoResponse>> ListarAgendaAsync(int prestadorId)
+    {
+        return await _pedidoService.ListarMeusPedidosAsync(prestadorId);
+    }
+
     public async Task AtualizarDisponibilidadeAsync(int prestadorId, string status)
     {
         var statusNormalizado = status.Trim().ToUpper();
-        if (statusNormalizado != "DISPONIVEL" && statusNormalizado != "OCUPADO" && statusNormalizado != "AUSENTE" && statusNormalizado != "INATIVO")
+        if (!Enum.TryParse<StatusDisponibilidade>(statusNormalizado, true, out var statusEnum))
         {
             throw new ArgumentException("Status de disponibilidade inválido.");
         }
 
-        await _prestadorRepository.AtualizarStatusDisponibilidadeAsync(prestadorId, statusNormalizado);
+        await _prestadorRepository.AtualizarStatusDisponibilidadeAsync(prestadorId, statusEnum.ToString());
     }
 
     public async Task AtualizarBioAsync(int prestadorId, string bio)

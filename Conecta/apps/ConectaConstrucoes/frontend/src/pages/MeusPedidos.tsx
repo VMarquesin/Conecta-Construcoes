@@ -1,112 +1,31 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useChat } from '../context/ChatContext'
 import HeaderChatButton from '../components/chat/HeaderChatButton'
 import AccountTrigger from '../components/session/AccountTrigger'
+import { pedidoService, type PedidoResumoResponse } from '../features/cliente/services/pedidoService'
 import './MeusPedidos.css'
-
-import carlosAvatar from '../assets/avatars/carlos.jpg'
-import marianaRochaAvatar from '../assets/avatars/mariana_rocha.jpg'
-import robertoAvatar from '../assets/avatars/roberto.jpg'
-import marianaCostaAvatar from '../assets/avatars/mariana.jpg'
-
-interface Pedido {
-  id: number
-  prestadorId: number
-  prestadorNome: string
-  prestadorProfissao: string
-  prestadorAvatar: string
-  solicitadoEm: string
-  status: 'pendente' | 'aceito' | 'concluido'
-  statusTexto: string
-  tituloServico: string
-  descricaoServico: string
-  valorLabel: string
-  valorTexto: string
-  valorIsPreco?: boolean
-  statusDica: string
-  dicaIcone: 'clock' | 'truck' | 'check' | 'calendar'
-}
-
-const PEDIDOS_INICIAIS: Pedido[] = [
-  {
-    id: 1,
-    prestadorId: 1,
-    prestadorNome: 'Carlos Silva',
-    prestadorProfissao: 'Eletricista Residencial',
-    prestadorAvatar: carlosAvatar,
-    solicitadoEm: 'Hoje, 14:30',
-    status: 'pendente',
-    statusTexto: 'Pendente',
-    tituloServico: 'Troca de fiação do chuveiro e disjuntores',
-    descricaoServico:
-      'Revisão do quadro de distribuição geral e substituição do cabeamento de 6mm com disjuntor bipolar de 32A.',
-    valorLabel: 'Orçamento Estimado',
-    valorTexto: 'R$ 180,00',
-    valorIsPreco: true,
-    statusDica: 'Aguardando resposta',
-    dicaIcone: 'clock',
-  },
-  {
-    id: 2,
-    prestadorId: 3,
-    prestadorNome: 'Mariana Rocha',
-    prestadorProfissao: 'Encanadora Hidráulica',
-    prestadorAvatar: marianaRochaAvatar,
-    solicitadoEm: 'Ontem, 19:15',
-    status: 'pendente',
-    statusTexto: 'Pendente',
-    tituloServico: 'Reparo emergencial de vazamento sob a pia',
-    descricaoServico:
-      'Sifão articulado apresentando gotejamento constante na bancada da cozinha, necessidade de troca da borracha de vedação.',
-    valorLabel: 'Valor Previsto',
-    valorTexto: 'A combinar',
-    valorIsPreco: false,
-    statusDica: 'Visita técnica grátis',
-    dicaIcone: 'truck',
-  },
-  {
-    id: 3,
-    prestadorId: 5,
-    prestadorNome: 'Roberto Mendes',
-    prestadorProfissao: 'Encanador & Desentupimento',
-    prestadorAvatar: robertoAvatar,
-    solicitadoEm: '22 de Outubro',
-    status: 'aceito',
-    statusTexto: 'Aceito',
-    tituloServico: 'Limpeza e desentupimento de tubulação principal',
-    descricaoServico: 'Desobstrução do encanamento e verificação do fluxo da caixa de gordura.',
-    valorLabel: 'Valor Fechado',
-    valorTexto: 'R$ 220,00',
-    valorIsPreco: true,
-    statusDica: 'Agendado para amanhã, 10:00',
-    dicaIcone: 'calendar',
-  },
-  {
-    id: 4,
-    prestadorId: 2,
-    prestadorNome: 'Mariana Costa',
-    prestadorProfissao: 'Pintora & Acabamentos',
-    prestadorAvatar: marianaCostaAvatar,
-    solicitadoEm: '18 de Outubro',
-    status: 'concluido',
-    statusTexto: 'Concluído',
-    tituloServico: 'Pintura interna e reparos em drywall',
-    descricaoServico: 'Pintura completa com duas demãos de tinta lavável e tratamento de trincas.',
-    valorLabel: 'Valor Pago',
-    valorTexto: 'R$ 450,00',
-    valorIsPreco: true,
-    statusDica: 'Serviço finalizado com garantia',
-    dicaIcone: 'check',
-  },
-]
 
 export default function MeusPedidos() {
   const navigate = useNavigate()
   const { abrirChat } = useChat()
-  const [pedidos, setPedidos] = useState<Pedido[]>(PEDIDOS_INICIAIS)
+  const [pedidos, setPedidos] = useState<PedidoResumoResponse[]>([])
+  const [loading, setLoading] = useState(true)
   const [abaAtiva, setAbaAtiva] = useState<'pendente' | 'aceito' | 'concluido'>('pendente')
-  const [pedidoSelecionado, setPedidoSelecionado] = useState<Pedido | null>(null)
+  const [pedidoSelecionado, setPedidoSelecionado] = useState<PedidoResumoResponse | null>(null)
+
+  const carregarPedidos = () => {
+    setLoading(true)
+    pedidoService
+      .listarMeusPedidos()
+      .then((data) => setPedidos(data))
+      .catch((err) => console.error('Erro ao listar pedidos:', err))
+      .finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    carregarPedidos()
+  }, [])
 
   const numPendentes = pedidos.filter((p) => p.status === 'pendente').length
   const numAceitos = pedidos.filter((p) => p.status === 'aceito').length
@@ -114,9 +33,16 @@ export default function MeusPedidos() {
 
   const pedidosFiltrados = pedidos.filter((p) => p.status === abaAtiva)
 
-  const handleCancelar = (id: number, prestadorNome: string) => {
+  const handleCancelar = async (id: number, prestadorNome: string) => {
     if (confirm(`Deseja realmente cancelar o pedido com ${prestadorNome}?`)) {
-      setPedidos((prev) => prev.filter((p) => p.id !== id))
+      try {
+        await pedidoService.cancelarPedido(id)
+        alert('Pedido cancelado com sucesso.')
+        carregarPedidos()
+      } catch (err: any) {
+        console.error('Erro ao cancelar pedido:', err)
+        alert(err.message || 'Erro ao cancelar o pedido.')
+      }
     }
   }
 
@@ -236,7 +162,11 @@ export default function MeusPedidos() {
 
           {/* Lista de Pedidos Filtrados */}
           <div className="pedidos-cards-grid">
-            {pedidosFiltrados.length === 0 ? (
+            {loading ? (
+              <div style={{ textAlign: 'center', padding: '60px 20px', color: '#64748b', gridColumn: '1 / -1' }}>
+                <p>Carregando seus pedidos...</p>
+              </div>
+            ) : pedidosFiltrados.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '60px 20px', color: '#64748b', gridColumn: '1 / -1' }}>
                 <h3>Nenhum pedido nesta categoria</h3>
                 <p>Quando você solicitar novos orçamentos, eles aparecerão aqui.</p>
@@ -255,11 +185,20 @@ export default function MeusPedidos() {
                   <div className="pedido-prof-header">
                     <div className="pedido-prof-left">
                       <div className="pedido-prof-avatar-wrap">
-                        <img
-                          src={pedido.prestadorAvatar}
-                          alt={pedido.prestadorNome}
-                          className="pedido-prof-avatar-img"
-                        />
+                        {pedido.prestadorAvatar ? (
+                          <img
+                            src={pedido.prestadorAvatar}
+                            alt={pedido.prestadorNome}
+                            className="pedido-prof-avatar-img"
+                          />
+                        ) : (
+                          <div className="pedido-prof-avatar-img" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0056D6', color: '#fff' }}>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                              <circle cx="12" cy="7" r="4" />
+                            </svg>
+                          </div>
+                        )}
                         <span className="pedido-prof-check">
                           <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5">
                             <polyline points="20 6 9 17 4 12" />

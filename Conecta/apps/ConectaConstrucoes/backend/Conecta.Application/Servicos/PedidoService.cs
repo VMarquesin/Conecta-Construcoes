@@ -1,5 +1,6 @@
 using Conecta.Application.DTOs;
 using Conecta.Domain.Entidades;
+using Conecta.Domain.Enums;
 using Conecta.Domain.Interfaces;
 
 namespace Conecta.Application.Servicos;
@@ -31,29 +32,29 @@ public class PedidoService : IPedidoService
 
         return pedidos.Select(p =>
         {
-            var statusAba = p.Status.ToUpper() switch
+            var statusAba = p.Status switch
             {
-                "AGUARDANDO_ACEITE" => "pendente",
-                "AGENDADO" or "EM_EXECUCAO" => "aceito",
-                "CONCLUIDO" => "concluido",
+                StatusPedido.AGUARDANDO_ACEITE => "pendente",
+                StatusPedido.AGENDADO or StatusPedido.EM_EXECUCAO => "aceito",
+                StatusPedido.CONCLUIDO => "concluido",
                 _ => "pendente"
             };
 
-            var statusTexto = p.Status.ToUpper() switch
+            var statusTexto = p.Status switch
             {
-                "AGUARDANDO_ACEITE" => "Pendente",
-                "AGENDADO" => "Aceito",
-                "EM_EXECUCAO" => "Em Execução",
-                "CONCLUIDO" => "Concluído",
-                "CANCELADO" => "Cancelado",
-                _ => p.Status
+                StatusPedido.AGUARDANDO_ACEITE => "Pendente",
+                StatusPedido.AGENDADO => "Aceito",
+                StatusPedido.EM_EXECUCAO => "Em Execução",
+                StatusPedido.CONCLUIDO => "Concluído",
+                StatusPedido.CANCELADO => "Cancelado",
+                _ => p.Status.ToString()
             };
 
-            var valorLabel = p.Status.ToUpper() switch
+            var valorLabel = p.Status switch
             {
-                "AGUARDANDO_ACEITE" => "Orçamento Estimado",
-                "AGENDADO" or "EM_EXECUCAO" => "Valor Fechado",
-                "CONCLUIDO" => "Valor Pago",
+                StatusPedido.AGUARDANDO_ACEITE => "Orçamento Estimado",
+                StatusPedido.AGENDADO or StatusPedido.EM_EXECUCAO => "Valor Fechado",
+                StatusPedido.CONCLUIDO => "Valor Pago",
                 _ => "Valor Previsto"
             };
 
@@ -61,20 +62,20 @@ public class PedidoService : IPedidoService
             var valorTexto = valor.HasValue ? $"R$ {valor.Value:F2}" : "A combinar";
             var valorIsPreco = valor.HasValue;
 
-            var statusDica = p.Status.ToUpper() switch
+            var statusDica = p.Status switch
             {
-                "AGUARDANDO_ACEITE" => "Aguardando resposta",
-                "AGENDADO" => p.AgendadoPara.HasValue ? $"Agendado para {p.AgendadoPara.Value:dd/MM, HH:mm}" : "Agendamento confirmado",
-                "EM_EXECUCAO" => "Serviço em andamento",
-                "CONCLUIDO" => "Serviço finalizado com garantia Conecta",
+                StatusPedido.AGUARDANDO_ACEITE => "Aguardando resposta",
+                StatusPedido.AGENDADO => p.AgendadoPara.HasValue ? $"Agendado para {p.AgendadoPara.Value:dd/MM, HH:mm}" : "Agendamento confirmado",
+                StatusPedido.EM_EXECUCAO => "Serviço em andamento",
+                StatusPedido.CONCLUIDO => "Serviço finalizado com garantia Conecta",
                 _ => "Cancelado"
             };
 
-            var dicaIcone = p.Status.ToUpper() switch
+            var dicaIcone = p.Status switch
             {
-                "AGUARDANDO_ACEITE" => "clock",
-                "AGENDADO" => "calendar",
-                "CONCLUIDO" => "check",
+                StatusPedido.AGUARDANDO_ACEITE => "clock",
+                StatusPedido.AGENDADO => "calendar",
+                StatusPedido.CONCLUIDO => "check",
                 _ => "truck"
             };
 
@@ -114,14 +115,14 @@ public class PedidoService : IPedidoService
             throw new UnauthorizedAccessException("Você não tem acesso aos dados deste pedido.");
         }
 
-        var statusTexto = p.Status.ToUpper() switch
+        var statusTexto = p.Status switch
         {
-            "AGUARDANDO_ACEITE" => "Aguardando Aceite",
-            "AGENDADO" => "Aceito",
-            "EM_EXECUCAO" => "Em Execução",
-            "CONCLUIDO" => "Concluído",
-            "CANCELADO" => "Cancelado",
-            _ => p.Status
+            StatusPedido.AGUARDANDO_ACEITE => "Aguardando Aceite",
+            StatusPedido.AGENDADO => "Aceito",
+            StatusPedido.EM_EXECUCAO => "Em Execução",
+            StatusPedido.CONCLUIDO => "Concluído",
+            StatusPedido.CANCELADO => "Cancelado",
+            _ => p.Status.ToString()
         };
 
         PropostaResponse? propostaDto = null;
@@ -134,7 +135,7 @@ public class PedidoService : IPedidoService
                 p.Proposta.ValorTotal,
                 p.Proposta.PrazoDias,
                 p.Proposta.Descricao,
-                p.Proposta.Status,
+                p.Proposta.Status.ToString(),
                 p.Proposta.CriadoEm,
                 p.Proposta.Itens.Select(i => new ItemPropostaResponse(i.Id, i.Descricao ?? "", i.Valor, i.Quantidade)).ToList()
             );
@@ -147,7 +148,7 @@ public class PedidoService : IPedidoService
             : "Profissional Verificado";
 
         var clienteNome = p.Cliente?.Usuario?.Nome ?? "Cliente";
-        var podeAvaliar = p.Status == "CONCLUIDO" && p.Avaliacao == null && p.ClienteId == usuarioId;
+        var podeAvaliar = p.Status == StatusPedido.CONCLUIDO && p.Avaliacao == null && p.ClienteId == usuarioId;
         var jaAvaliado = p.Avaliacao != null;
 
         return new PedidoDetalheResponse(
@@ -160,7 +161,7 @@ public class PedidoService : IPedidoService
             PrestadorAvatar: prestadorAvatar,
             TituloServico: p.DescricaoNecessidade.Length > 50 ? p.DescricaoNecessidade[..50] + "..." : p.DescricaoNecessidade,
             DescricaoServico: p.DescricaoNecessidade,
-            Status: p.Status,
+            Status: p.Status.ToString(),
             StatusTexto: statusTexto,
             ValorCombinado: p.ValorCombinado,
             ValorFinal: p.ValorFinal,
@@ -196,7 +197,7 @@ public class PedidoService : IPedidoService
             PropostaId = proposta.Id,
             EnderecoAtendimento = proposta.Solicitacao.EnderecoAtendimento,
             DescricaoNecessidade = proposta.Solicitacao.Descricao,
-            Status = "AGUARDANDO_ACEITE",
+            Status = StatusPedido.AGUARDANDO_ACEITE,
             ValorCombinado = proposta.ValorTotal,
             ValorFinal = proposta.ValorTotal,
             DataSolicitacao = DateTime.UtcNow

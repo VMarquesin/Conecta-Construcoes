@@ -1,4 +1,4 @@
-const BASE_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? '/api'
+const BASE_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? '/api/v1'
 
 export class ApiError extends Error {
   status: number
@@ -10,7 +10,15 @@ export class ApiError extends Error {
 
 export async function http<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = localStorage.getItem('conecta.token')
-  const res = await fetch(`${BASE_URL}${path}`, {
+  const url = path.startsWith('http://') || path.startsWith('https://')
+    ? path
+    : path.startsWith('/api/v1')
+      ? path
+      : path.startsWith('/')
+        ? `${BASE_URL}${path}`
+        : `${BASE_URL}/${path}`
+
+  const res = await fetch(url, {
     ...init,
     headers: {
       'Content-Type': 'application/json',

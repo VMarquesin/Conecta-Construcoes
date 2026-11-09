@@ -1,6 +1,7 @@
 using Conecta.Application.DTOs;
 using Conecta.Application.Servicos.Seguranca;
 using Conecta.Domain.Entidades;
+using Conecta.Domain.Enums;
 using Conecta.Domain.Interfaces;
 
 namespace Conecta.Application.Servicos;
@@ -62,10 +63,15 @@ public class UsuarioService : IUsuarioService
             Nome = request.Nome.Trim(),
             Email = request.Email.Trim().ToLower(),
             SenhaHash = senhaHash,
-            Tipo = string.IsNullOrWhiteSpace(request.Tipo) ? "CLIENTE" : request.Tipo.ToUpper(),
-            StatusConta = "ATIVA",
-            StatusVerificacao = "COMPLETO"
+            Perfil = string.IsNullOrWhiteSpace(request.Perfil) ? "CLIENTE" : request.Perfil.ToUpper(),
+            StatusConta = StatusConta.ATIVA,
+            StatusVerificacao = StatusVerificacao.COMPLETO
         };
+
+        // Valores padrão para o Cadastro Simplificado
+        usuario.StatusConta = StatusConta.ATIVA;
+        usuario.StatusVerificacao = StatusVerificacao.COMPLETO;
+        usuario.Perfil = string.IsNullOrWhiteSpace(request.Perfil) ? "CLIENTE" : request.Perfil.Trim().ToUpper();
 
         var criado = await _usuarioRepository.AdicionarAsync(usuario);
 
@@ -83,8 +89,8 @@ public class UsuarioService : IUsuarioService
         }
         else
         {
-            // Atribui role padrão baseada no tipo (ex: CLIENTE ou PRESTADOR)
-            var rolePadrao = await _roleRepository.ObterPorNomeAsync(usuario.Tipo);
+            // Atribui role padrão baseada no perfil (ex: CLIENTE ou PRESTADOR)
+            var rolePadrao = await _roleRepository.ObterPorNomeAsync(usuario.Perfil);
             if (rolePadrao != null)
             {
                 await _usuarioRepository.AdicionarRoleAsync(criado.Id, rolePadrao.Id);
@@ -115,9 +121,14 @@ public class UsuarioService : IUsuarioService
             SenhaHash = senhaHash,
             Perfil = perfilNormalizado,
             Documento = request.Documento?.Trim(),
-            StatusConta = "ATIVA",
-            StatusVerificacao = "COMPLETO"
+            StatusConta = StatusConta.ATIVA,
+            StatusVerificacao = StatusVerificacao.COMPLETO
         };
+
+        // Valores padrão para o Cadastro Simplificado
+        usuario.StatusConta = StatusConta.ATIVA; 
+        usuario.StatusVerificacao = StatusVerificacao.COMPLETO; // Clientes já entram verificados ou pendentes de docs, dependendo da regra
+        usuario.Perfil = string.IsNullOrWhiteSpace(request.Perfil) ? "CLIENTE" : perfilNormalizado; // Garanta que a role seja atribuída corretamente
 
         var criado = await _usuarioRepository.AdicionarAsync(usuario);
 
@@ -141,7 +152,7 @@ public class UsuarioService : IUsuarioService
                 RaioAtendimentoKm = request.DadosPrestador?.RaioAtendimentoKm ?? 15,
                 Latitude = request.Endereco?.Latitude ?? 0,
                 Longitude = request.Endereco?.Longitude ?? 0,
-                StatusDisponibilidade = "DISPONIVEL"
+                StatusDisponibilidade = StatusDisponibilidade.DISPONIVEL
             };
             await _usuarioRepository.AdicionarPrestadorAsync(prestador);
         }
@@ -225,11 +236,11 @@ public class UsuarioService : IUsuarioService
         usuario.Nome = request.Nome.Trim();
         usuario.Email = request.Email.Trim().ToLower();
 
-        if (!string.IsNullOrWhiteSpace(request.StatusConta))
-            usuario.StatusConta = request.StatusConta.ToUpper();
+        if (!string.IsNullOrWhiteSpace(request.StatusConta) && Enum.TryParse<StatusConta>(request.StatusConta, true, out var sc))
+            usuario.StatusConta = sc;
 
-        if (!string.IsNullOrWhiteSpace(request.StatusVerificacao))
-            usuario.StatusVerificacao = request.StatusVerificacao.ToUpper();
+        if (!string.IsNullOrWhiteSpace(request.StatusVerificacao) && Enum.TryParse<StatusVerificacao>(request.StatusVerificacao, true, out var sv))
+            usuario.StatusVerificacao = sv;
 
         await _usuarioRepository.AtualizarAsync(usuario);
 
@@ -297,9 +308,9 @@ public class UsuarioService : IUsuarioService
             u.Id,
             u.Nome,
             u.Email,
-            u.Tipo,
-            u.StatusVerificacao,
-            u.StatusConta,
+            u.Perfil,
+            u.StatusVerificacao.ToString(),
+            u.StatusConta.ToString(),
             u.UltimoAcessoEm,
             u.CriadoEm,
             u.AtualizadoEm,

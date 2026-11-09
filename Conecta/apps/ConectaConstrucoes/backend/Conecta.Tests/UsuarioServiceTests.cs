@@ -54,7 +54,7 @@ public class UsuarioServiceTests
                 Id = 10,
                 Nome = "João Silva",
                 Email = "joao@email.com",
-                Tipo = "CLIENTE",
+                Perfil = "CLIENTE",
                 UsuarioRoles = new List<UsuarioRole>
                 {
                     new() { UsuarioId = 10, RoleId = 2, Role = roleCliente }

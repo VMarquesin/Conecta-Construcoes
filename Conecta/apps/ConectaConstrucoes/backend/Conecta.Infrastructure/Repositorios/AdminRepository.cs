@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Conecta.Domain.Entidades;
+using Conecta.Domain.Enums;
 using Conecta.Domain.Interfaces;
 using Conecta.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -20,9 +21,9 @@ public class AdminRepository : IAdminRepository
         var totalUsuarios = await _context.Usuarios.CountAsync();
         var totalPrestadores = await _context.Prestadores.CountAsync();
         var totalClientes = await _context.Clientes.CountAsync();
-        var bloqueados = await _context.Usuarios.CountAsync(u => u.StatusConta == "BLOQUEADA" || !u.Ativo);
-        var docsPendentes = await _context.DocumentosPrestadores.CountAsync(d => d.Status == "PENDENTE");
-        var denunciasAbertas = await _context.Denuncias.CountAsync(d => d.Status == "ABERTA");
+        var bloqueados = await _context.Usuarios.CountAsync(u => u.StatusConta == StatusConta.BLOQUEADA || !u.Ativo);
+        var docsPendentes = await _context.DocumentosPrestadores.CountAsync(d => d.Status == StatusDocumento.PENDENTE);
+        var denunciasAbertas = await _context.Denuncias.CountAsync(d => d.Status == StatusDenuncia.ABERTA);
 
         return new ResumoAdminDados(
             totalUsuarios,
@@ -39,7 +40,7 @@ public class AdminRepository : IAdminRepository
         return await _context.DocumentosPrestadores
             .Include(d => d.Prestador)
                 .ThenInclude(p => p.Usuario)
-            .Where(d => d.Status == "PENDENTE")
+            .Where(d => d.Status == StatusDocumento.PENDENTE)
             .OrderBy(d => d.SubmetidoEm)
             .ToListAsync();
     }
@@ -57,7 +58,7 @@ public class AdminRepository : IAdminRepository
         var doc = await _context.DocumentosPrestadores.FindAsync(id);
         if (doc == null) return;
 
-        doc.Status = "APROVADO";
+        doc.Status = StatusDocumento.APROVADO;
         doc.AnalisadoPor = analisadorId;
         doc.AnalisadoEm = DateTime.UtcNow;
 
@@ -67,7 +68,7 @@ public class AdminRepository : IAdminRepository
         if (usuario != null)
         {
             usuario.Verificado = true;
-            usuario.StatusVerificacao = "VERIFICADO";
+            usuario.StatusVerificacao = StatusVerificacao.VERIFICADO;
         }
 
         _context.AuditLogs.Add(new AuditLog
@@ -88,10 +89,17 @@ public class AdminRepository : IAdminRepository
         var doc = await _context.DocumentosPrestadores.FindAsync(id);
         if (doc == null) return;
 
-        doc.Status = "REJEITADO";
+        doc.Status = StatusDocumento.REJEITADO;
         doc.MotivoRejeicao = motivo;
         doc.AnalisadoPor = analisadorId;
         doc.AnalisadoEm = DateTime.UtcNow;
+
+        var prestadorId = doc.PrestadorId;
+        var usuario = await _context.Usuarios.FindAsync(prestadorId);
+        if (usuario != null)
+        {
+            usuario.StatusVerificacao = StatusVerificacao.REJEITADO;
+        }
 
         _context.AuditLogs.Add(new AuditLog
         {
@@ -128,18 +136,26 @@ public class AdminRepository : IAdminRepository
         var denuncia = await _context.Denuncias.FindAsync(id);
         if (denuncia == null) return;
 
-        denuncia.Status = acao;
+        if (Enum.TryParse<StatusDenuncia>(acao, true, out var statusDenuncia))
+            denuncia.Status = statusDenuncia;
+        else if (acao.Equals("ARQUIVAR", StringComparison.OrdinalIgnoreCase) || acao.Equals("IMPROCEDENTE", StringComparison.OrdinalIgnoreCase))
+            denuncia.Status = StatusDenuncia.ENCERRADA;
+        else if (acao.Equals("ADVERTIR", StringComparison.OrdinalIgnoreCase) || acao.Equals("PROCEDENTE", StringComparison.OrdinalIgnoreCase))
+            denuncia.Status = StatusDenuncia.RESOLVIDA;
+        else if (acao.Equals("BLOQUEAR_USUARIO", StringComparison.OrdinalIgnoreCase) || acao.Equals("BANIDO", StringComparison.OrdinalIgnoreCase))
+            denuncia.Status = StatusDenuncia.BANIDO;
+
         denuncia.Resultado = observacao;
         denuncia.AnalisadoPor = moderadorId;
         denuncia.AnalisadoEm = DateTime.UtcNow;
 
-        if (acao == "BANIDO")
+        if (denuncia.Status == StatusDenuncia.BANIDO || acao.Equals("BLOQUEAR_USUARIO", StringComparison.OrdinalIgnoreCase))
         {
             var usuario = await _context.Usuarios.FindAsync(denuncia.UsuarioDenunciadoId);
             if (usuario != null)
             {
                 usuario.Ativo = false;
-                usuario.StatusConta = "BLOQUEADA";
+                usuario.StatusConta = StatusConta.BLOQUEADA;
             }
         }
 
@@ -162,7 +178,7 @@ public class AdminRepository : IAdminRepository
         if (usuario == null) return;
 
         usuario.Ativo = false;
-        usuario.StatusConta = "BLOQUEADA";
+        usuario.StatusConta = StatusConta.BLOQUEADA;
         usuario.AtualizadoEm = DateTime.UtcNow;
 
         _context.AuditLogs.Add(new AuditLog
@@ -184,7 +200,7 @@ public class AdminRepository : IAdminRepository
         if (usuario == null) return;
 
         usuario.Ativo = true;
-        usuario.StatusConta = "ATIVA";
+        usuario.StatusConta = StatusConta.ATIVA;
         usuario.AtualizadoEm = DateTime.UtcNow;
 
         _context.AuditLogs.Add(new AuditLog

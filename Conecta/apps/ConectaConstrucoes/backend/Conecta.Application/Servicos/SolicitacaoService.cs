@@ -1,5 +1,6 @@
 using Conecta.Application.DTOs;
 using Conecta.Domain.Entidades;
+using Conecta.Domain.Enums;
 using Conecta.Domain.Interfaces;
 
 namespace Conecta.Application.Servicos;
@@ -29,7 +30,7 @@ public class SolicitacaoService : ISolicitacaoService
             CategoriaId = request.CategoriaId,
             Titulo = request.Titulo.Trim(),
             Descricao = request.Descricao.Trim(),
-            Status = "ABERTA", // Requisito CON_016
+            Status = StatusSolicitacao.ABERTA, // Requisito CON_016
             EnderecoAtendimento = request.EnderecoAtendimento?.Trim()
         };
 
@@ -83,7 +84,7 @@ public class SolicitacaoService : ISolicitacaoService
             ValorTotal = request.ValorTotal,
             PrazoDias = request.PrazoDias,
             Descricao = request.Descricao?.Trim(),
-            Status = "ENVIADA"
+            Status = StatusProposta.ENVIADA
         };
 
         if (request.Itens != null && request.Itens.Any())
@@ -111,7 +112,7 @@ public class SolicitacaoService : ISolicitacaoService
             criada.ValorTotal,
             criada.PrazoDias,
             criada.Descricao,
-            criada.Status,
+            criada.Status.ToString(),
             criada.CriadoEm,
             criada.Itens.Select(i => new ItemPropostaResponse(i.Id, i.Descricao ?? "", i.Valor, i.Quantidade)).ToList()
         );
@@ -140,7 +141,7 @@ public class SolicitacaoService : ISolicitacaoService
             s.Prestador?.NomeFantasia ?? s.Prestador?.Usuario?.Nome ?? "Prestador",
             s.Titulo,
             s.Descricao,
-            s.Status,
+            s.Status.ToString(),
             s.EnderecoAtendimento,
             s.CriadoEm,
             s.Imagens.Select(i => i.ImagemUrl).ToList()

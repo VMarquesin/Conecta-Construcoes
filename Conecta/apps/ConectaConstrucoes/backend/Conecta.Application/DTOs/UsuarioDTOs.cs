@@ -15,7 +15,7 @@ public record CriarUsuarioRequest(
     [StringLength(100, MinimumLength = 6, ErrorMessage = "A senha deve ter no mínimo 6 caracteres.")]
     string Senha,
 
-    string Tipo = "CLIENTE",
+    string Perfil = "CLIENTE",
     List<string>? RolesIniciais = null
 );
 
@@ -45,7 +45,7 @@ public record UsuarioResponse(
     int Id,
     string Nome,
     string Email,
-    string Tipo,
+    string Perfil,
     string StatusVerificacao,
     string StatusConta,
     DateTime? UltimoAcessoEm,

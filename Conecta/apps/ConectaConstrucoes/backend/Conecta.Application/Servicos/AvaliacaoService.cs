@@ -1,5 +1,6 @@
 using Conecta.Application.DTOs;
 using Conecta.Domain.Entidades;
+using Conecta.Domain.Enums;
 using Conecta.Domain.Interfaces;
 
 namespace Conecta.Application.Servicos;
@@ -33,7 +34,7 @@ public class AvaliacaoService : IAvaliacaoService
             throw new UnauthorizedAccessException("Apenas o cliente contratante deste pedido pode avaliá-lo.");
 
         // Regra de Negócio Crucial (CON_019): Avaliação restrita a pedidos concluídos
-        if (pedido.Status != "CONCLUIDO")
+        if (pedido.Status != StatusPedido.CONCLUIDO)
             throw new InvalidOperationException($"Não é possível avaliar um pedido com status '{pedido.Status}'. A avaliação é permitida apenas após a conclusão do serviço.");
 
         // Regra de Unicidade: apenas 1 avaliação por pedido

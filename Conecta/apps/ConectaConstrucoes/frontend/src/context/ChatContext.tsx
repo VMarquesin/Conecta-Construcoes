@@ -1,9 +1,5 @@
-import React, { createContext, useContext, useState } from 'react'
-
-import carlosAvatar from '../assets/avatars/carlos.jpg'
-import marianaRochaAvatar from '../assets/avatars/mariana_rocha.jpg'
-import robertoAvatar from '../assets/avatars/roberto.jpg'
-import quadroDisjuntores from '../assets/portfolio/quadro.jpg'
+import React, { createContext, useContext, useState, useEffect } from 'react'
+import { chatService, type ConversaResponse } from '../features/cliente/services/chatService'
 
 export interface MensagemItem {
   id: string
@@ -18,6 +14,7 @@ export interface MensagemItem {
 
 export interface Conversa {
   id: string
+  conversaId?: number
   prestadorId: number
   nome: string
   profissao: string
@@ -33,6 +30,7 @@ export interface Conversa {
 
 interface ChatContextType {
   conversas: Conversa[]
+  loading: boolean
   dropdownAberto: boolean
   setDropdownAberto: (aberto: boolean | ((prev: boolean) => boolean)) => void
   toggleDropdown: () => void
@@ -42,147 +40,112 @@ interface ChatContextType {
   fecharJanela: () => void
   minimizarJanela: () => void
   restaurarJanela: () => void
-  enviarMensagem: (conversaId: string, texto: string) => void
+  enviarMensagem: (conversaId: string, texto: string) => Promise<void>
   totalNaoLidas: number
+  recarregarConversas: () => Promise<void>
 }
-
-const CONVERSAS_INICIAIS: Conversa[] = [
-  {
-    id: 'carlos-silva',
-    prestadorId: 1,
-    nome: 'Carlos Silva',
-    profissao: 'Eletricista Residencial & Predial',
-    avatar: carlosAvatar,
-    online: true,
-    statusTexto: 'Online agora • Responde em ~15 min',
-    naoLida: true,
-    ultimaMensagem: 'Boa tarde, Matheus! Consigo sim, estou com a agenda livre...',
-    tempo: '2 min',
-    pedidoNumero: '1042',
-    mensagens: [
-      {
-        id: 'm1',
-        remetente: 'usuario',
-        texto:
-          'Olá Carlos, boa tarde! Gostaria de confirmar se você consegue vir hoje verificar o disjuntor que está desarmando quando ligo o chuveiro.',
-        hora: '14:15',
-        status: 'Entregue',
-      },
-      {
-        id: 'm2',
-        remetente: 'usuario',
-        imagemUrl: quadroDisjuntores,
-        imagemLegenda: 'quadro_disjuntores.jpg',
-        hora: '14:16',
-        status: 'Entregue',
-      },
-      {
-        id: 'm3',
-        remetente: 'prestador',
-        texto:
-          'Boa tarde, Matheus! Consigo sim, estou com a agenda livre a partir das 16h. Pelas fotos parece ser um disjuntor de 30A subdimensionado para o chuveiro atual.',
-        hora: '14:20',
-      },
-      {
-        id: 'm4',
-        remetente: 'prestador',
-        isProposta: true,
-        hora: '14:22',
-      },
-    ],
-  },
-  {
-    id: 'mariana-rocha',
-    prestadorId: 3,
-    nome: 'Mariana Rocha',
-    profissao: 'Encanadora Hidráulica',
-    avatar: marianaRochaAvatar,
-    online: true,
-    statusTexto: 'Online há 20 min',
-    naoLida: true,
-    ultimaMensagem: 'Posso fazer a visita técnica gratuita amanhã pela manhã.',
-    tempo: '45 min',
-    pedidoNumero: '1043',
-    mensagens: [
-      {
-        id: 'mr1',
-        remetente: 'usuario',
-        texto: 'Olá Mariana, o sifão da pia está com vazamento constante. Você consegue avaliar?',
-        hora: '11:30',
-        status: 'Entregue',
-      },
-      {
-        id: 'mr2',
-        remetente: 'prestador',
-        texto: 'Posso fazer a visita técnica gratuita amanhã pela manhã entre 9h e 11h. Fica bom para você?',
-        hora: '11:45',
-      },
-    ],
-  },
-  {
-    id: 'roberto-mendes',
-    prestadorId: 5,
-    nome: 'Roberto Mendes',
-    profissao: 'Encanador & Desentupimento',
-    avatar: robertoAvatar,
-    online: false,
-    statusTexto: 'Online há 2h',
-    naoLida: false,
-    ultimaMensagem: 'Perfeito! O agendamento para desobstrução está confirmado.',
-    tempo: '2 dias',
-    pedidoNumero: '1040',
-    mensagens: [
-      {
-        id: 'rm1',
-        remetente: 'usuario',
-        texto: 'Roberto, o serviço na tubulação foi agendado para amanhã?',
-        hora: 'Ontem 16:00',
-        status: 'Lido',
-      },
-      {
-        id: 'rm2',
-        remetente: 'prestador',
-        texto: 'Perfeito! O agendamento para desobstrução está confirmado para as 10h com a garantia Conecta.',
-        hora: 'Ontem 16:15',
-      },
-    ],
-  },
-]
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined)
 
 export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [conversas, setConversas] = useState<Conversa[]>(CONVERSAS_INICIAIS)
+  const [conversas, setConversas] = useState<Conversa[]>([])
+  const [loading, setLoading] = useState(false)
   const [dropdownAberto, setDropdownAberto] = useState(false)
   const [chatJanelaAtiva, setChatJanelaAtiva] = useState<Conversa | null>(null)
   const [isMinimizado, setIsMinimizado] = useState(false)
 
+  const carregarConversas = async () => {
+    const token = localStorage.getItem('token') || localStorage.getItem('conecta_token')
+    if (!token) {
+      setConversas([])
+      return
+    }
+
+    try {
+      setLoading(true)
+      const data: ConversaResponse[] = await chatService.listarConversas()
+      if (Array.isArray(data) && data.length > 0) {
+        const mapeadas: Conversa[] = data.map((c) => ({
+          id: String(c.conversaId || c.id),
+          conversaId: c.conversaId,
+          prestadorId: c.prestadorId,
+          nome: c.nome || 'Profissional',
+          profissao: c.profissao || 'Prestador de Serviços',
+          avatar: c.avatar || '',
+          online: c.online ?? false,
+          statusTexto: c.statusTexto || 'Disponível',
+          naoLida: c.naoLida ?? false,
+          ultimaMensagem: c.ultimaMensagem || '',
+          tempo: c.tempo || '',
+          pedidoNumero: c.pedidoNumero,
+          mensagens: (c.mensagens || []).map((m) => ({
+            id: String(m.id),
+            remetente: m.remetente,
+            texto: m.texto,
+            imagemUrl: m.imagemUrl,
+            imagemLegenda: m.imagemLegenda,
+            hora: m.hora,
+            status: m.status,
+            isProposta: m.isProposta,
+          })),
+        }))
+        setConversas(mapeadas)
+      } else {
+        setConversas([])
+      }
+    } catch {
+      setConversas([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    carregarConversas()
+  }, [])
+
   const toggleDropdown = () => {
-    setDropdownAberto((prev) => !prev)
+    setDropdownAberto((prev) => {
+      const next = !prev
+      if (next) carregarConversas()
+      return next
+    })
   }
 
   const abrirChat = (conversaIdOuPrestadorId: string | number) => {
     setDropdownAberto(false)
 
-    // Busca por ID da conversa ou por prestadorId
+    // Busca conversa existente
     const encontrada = conversas.find(
       (c) =>
-        c.id === conversaIdOuPrestadorId ||
+        c.id === String(conversaIdOuPrestadorId) ||
         c.prestadorId === Number(conversaIdOuPrestadorId) ||
-        c.nome.toLowerCase().includes(String(conversaIdOuPrestadorId).toLowerCase())
+        (c.conversaId && c.conversaId === Number(conversaIdOuPrestadorId))
     )
 
     if (encontrada) {
-      // Marca como lida
       setConversas((prev) =>
         prev.map((c) => (c.id === encontrada.id ? { ...c, naoLida: false } : c))
       )
       setChatJanelaAtiva({ ...encontrada, naoLida: false })
       setIsMinimizado(false)
     } else {
-      // Se não encontrar, abre a conversa padrão do Carlos Silva
-      const padrao = conversas[0]
-      setChatJanelaAtiva(padrao)
+      // Se a conversa não existir no array, abre janela limpa com o ID informado (sem mockar contatos)
+      const novoId = String(conversaIdOuPrestadorId)
+      const novaConversa: Conversa = {
+        id: novoId,
+        prestadorId: Number(conversaIdOuPrestadorId) || 0,
+        nome: 'Profissional',
+        profissao: 'Prestador de Serviços',
+        avatar: '',
+        online: false,
+        statusTexto: 'Disponível',
+        naoLida: false,
+        ultimaMensagem: '',
+        tempo: 'Agora',
+        mensagens: [],
+      }
+      setChatJanelaAtiva(novaConversa)
       setIsMinimizado(false)
     }
   }
@@ -200,7 +163,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsMinimizado(false)
   }
 
-  const enviarMensagem = (conversaId: string, texto: string) => {
+  const enviarMensagem = async (conversaId: string, texto: string) => {
     if (!texto.trim()) return
 
     const now = new Date()
@@ -211,24 +174,10 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       remetente: 'usuario',
       texto: texto.trim(),
       hora,
-      status: 'Entregue',
+      status: 'Enviando...',
     }
 
-    setConversas((prev) =>
-      prev.map((c) => {
-        if (c.id === conversaId) {
-          const atualizadas = [...c.mensagens, novaMsg]
-          return {
-            ...c,
-            mensagens: atualizadas,
-            ultimaMensagem: texto.trim(),
-            tempo: 'Agora',
-          }
-        }
-        return c
-      })
-    )
-
+    // Otimista
     setChatJanelaAtiva((prev) => {
       if (prev && prev.id === conversaId) {
         return {
@@ -241,41 +190,26 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return prev
     })
 
-    // Resposta automática simulada do prestador
-    setTimeout(() => {
-      const resposta: MensagemItem = {
-        id: (Date.now() + 1).toString(),
-        remetente: 'prestador',
-        texto: 'Combinado! Estou a caminho com todos os equipamentos. Qualquer coisa pode me mandar aqui.',
-        hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      }
-
-      setConversas((prev) =>
-        prev.map((c) => {
-          if (c.id === conversaId) {
+    const idNumerico = Number(conversaId)
+    if (!isNaN(idNumerico) && idNumerico > 0) {
+      try {
+        await chatService.enviarMensagem(idNumerico, { texto: texto.trim() })
+        // Marca como entregue
+        setChatJanelaAtiva((prev) => {
+          if (prev && prev.id === conversaId) {
             return {
-              ...c,
-              mensagens: [...c.mensagens, resposta],
-              ultimaMensagem: resposta.texto || '',
-              tempo: 'Agora',
+              ...prev,
+              mensagens: prev.mensagens.map((m) =>
+                m.id === novaMsg.id ? { ...m, status: 'Entregue' } : m
+              ),
             }
           }
-          return c
+          return prev
         })
-      )
-
-      setChatJanelaAtiva((prev) => {
-        if (prev && prev.id === conversaId) {
-          return {
-            ...prev,
-            mensagens: [...prev.mensagens, resposta],
-            ultimaMensagem: resposta.texto || '',
-            tempo: 'Agora',
-          }
-        }
-        return prev
-      })
-    }, 1800)
+      } catch (err) {
+        console.warn('Mensagem enviada localmente (offline ou pendente):', err)
+      }
+    }
   }
 
   const totalNaoLidas = conversas.filter((c) => c.naoLida).length
@@ -284,6 +218,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <ChatContext.Provider
       value={{
         conversas,
+        loading,
         dropdownAberto,
         setDropdownAberto,
         toggleDropdown,
@@ -295,6 +230,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         restaurarJanela,
         enviarMensagem,
         totalNaoLidas,
+        recarregarConversas: carregarConversas,
       }}
     >
       {children}

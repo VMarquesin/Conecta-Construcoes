@@ -1,4 +1,5 @@
 using Conecta.Domain.Entidades;
+using Conecta.Domain.Enums;
 using Conecta.Domain.Interfaces;
 using Conecta.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -18,7 +19,7 @@ public class SolicitacaoRepository : ISolicitacaoRepository
     {
         solicitacao.CriadoEm = DateTime.UtcNow;
         solicitacao.AtualizadoEm = DateTime.UtcNow;
-        solicitacao.Status = "ABERTA"; // Requisito CON_016
+        solicitacao.Status = StatusSolicitacao.ABERTA; // Requisito CON_016
 
         await _context.Solicitacoes.AddAsync(solicitacao);
         await _context.SaveChangesAsync();
@@ -57,7 +58,7 @@ public class SolicitacaoRepository : ISolicitacaoRepository
             .Include(s => s.Cliente)
                 .ThenInclude(c => c.Usuario)
             .AsNoTracking()
-            .Where(s => s.PrestadorId == prestadorId && (s.Status == "ABERTA" || s.Status == "AGUARDANDO_PROPOSTA"))
+            .Where(s => s.PrestadorId == prestadorId && (s.Status == StatusSolicitacao.ABERTA || s.Status == StatusSolicitacao.AGUARDANDO_PROPOSTA))
             .OrderByDescending(s => s.CriadoEm)
             .ToListAsync();
     }
@@ -67,7 +68,8 @@ public class SolicitacaoRepository : ISolicitacaoRepository
         var s = await _context.Solicitacoes.FindAsync(solicitacaoId);
         if (s != null)
         {
-            s.Status = novoStatus;
+            if (Enum.TryParse<StatusSolicitacao>(novoStatus, true, out var statusSol))
+                s.Status = statusSol;
             s.AtualizadoEm = DateTime.UtcNow;
             await _context.SaveChangesAsync();
         }
@@ -77,7 +79,7 @@ public class SolicitacaoRepository : ISolicitacaoRepository
     {
         proposta.CriadoEm = DateTime.UtcNow;
         proposta.AtualizadoEm = DateTime.UtcNow;
-        proposta.Status = "ENVIADA";
+        proposta.Status = StatusProposta.ENVIADA;
 
         await _context.Propostas.AddAsync(proposta);
         await _context.SaveChangesAsync();
@@ -97,7 +99,8 @@ public class SolicitacaoRepository : ISolicitacaoRepository
         var p = await _context.Propostas.FindAsync(propostaId);
         if (p != null)
         {
-            p.Status = novoStatus;
+            if (Enum.TryParse<StatusProposta>(novoStatus, true, out var statusProp))
+                p.Status = statusProp;
             p.AtualizadoEm = DateTime.UtcNow;
             await _context.SaveChangesAsync();
         }

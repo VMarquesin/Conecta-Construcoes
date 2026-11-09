@@ -1,143 +1,89 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import HeaderChatButton from '../components/chat/HeaderChatButton'
 import AccountTrigger from '../components/session/AccountTrigger'
 import { useSession } from '../context/SessionContext'
+import { vitrineService, type CategoriaResponse, type PrestadorBuscaItemResponse } from '../features/cliente/services/vitrineService'
 import './Home.css'
 
-import carlosAvatar from '../assets/avatars/carlos.jpg'
-import marianaAvatar from '../assets/avatars/mariana.jpg'
-import robertoAvatar from '../assets/avatars/roberto.jpg'
-import anaAvatar from '../assets/avatars/ana.jpg'
-
-interface Professional {
-  id: number
-  nome: string
-  profissao: string
-  categoria: string
-  avaliacao: number
-  numAvaliacoes: number
-  badgeTipo: 'verificado' | 'super' | 'disponivel'
-  badgeTexto: string
-  distancia: string
-  precoHora: number
-  avatar: string
+function getCategoryIcon(slug: string) {
+  switch (slug.toLowerCase()) {
+    case 'eletrica':
+      return (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+        </svg>
+      )
+    case 'encanador':
+    case 'hidraulica':
+      return (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+        </svg>
+      )
+    case 'pintura':
+      return (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="2" y="3" width="20" height="6" rx="2" />
+          <path d="M10 9v5a2 2 0 0 0 2 2h0a2 2 0 0 1 2 2v3" />
+        </svg>
+      )
+    case 'reformas':
+    case 'alvenaria':
+      return (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+          <path d="m20 16-4-4" />
+          <path d="m5 19 4-4" />
+        </svg>
+      )
+    case 'limpeza':
+      return (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="m18 3-9 9" />
+          <path d="m14 7 3 3" />
+          <path d="M9 12l-4 4a2 2 0 0 0 0 3v0a2 2 0 0 0 3 0l4-4" />
+          <path d="M5 21h14" />
+        </svg>
+      )
+    default:
+      return (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+        </svg>
+      )
+  }
 }
-
-const PROFISSIONAIS_INICIAIS: Professional[] = [
-  {
-    id: 1,
-    nome: 'Carlos Silva',
-    profissao: 'Eletricista Residencial',
-    categoria: 'eletrica',
-    avaliacao: 4.9,
-    numAvaliacoes: 128,
-    badgeTipo: 'verificado',
-    badgeTexto: 'Verificado',
-    distancia: '1.8 km',
-    precoHora: 90,
-    avatar: carlosAvatar,
-  },
-  {
-    id: 2,
-    nome: 'Mariana Costa',
-    profissao: 'Pintora & Acabamentos',
-    categoria: 'pintura',
-    avaliacao: 5.0,
-    numAvaliacoes: 94,
-    badgeTipo: 'super',
-    badgeTexto: 'Superprestadora',
-    distancia: '2.5 km',
-    precoHora: 110,
-    avatar: marianaAvatar,
-  },
-  {
-    id: 3,
-    nome: 'Roberto Mendes',
-    profissao: 'Encanador & Desentupimento',
-    categoria: 'encanador',
-    avaliacao: 4.8,
-    numAvaliacoes: 210,
-    badgeTipo: 'verificado',
-    badgeTexto: 'Verificado',
-    distancia: '3.1 km',
-    precoHora: 85,
-    avatar: robertoAvatar,
-  },
-  {
-    id: 4,
-    nome: 'Ana Oliveira',
-    profissao: 'Reformas & Pequenos Reparos',
-    categoria: 'reformas',
-    avaliacao: 4.9,
-    numAvaliacoes: 67,
-    badgeTipo: 'disponivel',
-    badgeTexto: 'Disponível Hoje',
-    distancia: '4.0 km',
-    precoHora: 95,
-    avatar: anaAvatar,
-  },
-]
-
-const CATEGORIAS = [
-  {
-    id: 'eletrica',
-    nome: 'Elétrica',
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-      </svg>
-    ),
-  },
-  {
-    id: 'encanador',
-    nome: 'Encanador',
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
-      </svg>
-    ),
-  },
-  {
-    id: 'pintura',
-    nome: 'Pintura',
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="2" y="3" width="20" height="6" rx="2" />
-        <path d="M10 9v5a2 2 0 0 0 2 2h0a2 2 0 0 1 2 2v3" />
-      </svg>
-    ),
-  },
-  {
-    id: 'reformas',
-    nome: 'Reformas',
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
-        <path d="m20 16-4-4" />
-        <path d="m5 19 4-4" />
-      </svg>
-    ),
-  },
-  {
-    id: 'limpeza',
-    nome: 'Limpeza',
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="m18 3-9 9" />
-        <path d="m14 7 3 3" />
-        <path d="M9 12l-4 4a2 2 0 0 0 0 3v0a2 2 0 0 0 3 0l4-4" />
-        <path d="M5 21h14" />
-      </svg>
-    ),
-  },
-]
 
 export default function Home() {
   const navigate = useNavigate()
   const { usuario } = useSession()
   const [busca, setBusca] = useState('')
   const [categoriaAtiva, setCategoriaAtiva] = useState<string | null>(null)
+  const [categorias, setCategorias] = useState<CategoriaResponse[]>([])
+  const [profissionais, setProfissionais] = useState<PrestadorBuscaItemResponse[]>([])
+  const [loadingCategorias, setLoadingCategorias] = useState(true)
+  const [loadingProfissionais, setLoadingProfissionais] = useState(true)
+
+  useEffect(() => {
+    vitrineService
+      .listarCategorias()
+      .then((data) => setCategorias(data))
+      .catch((err) => console.error('Erro ao listar categorias:', err))
+      .finally(() => setLoadingCategorias(false))
+  }, [])
+
+  useEffect(() => {
+    setLoadingProfissionais(true)
+    vitrineService
+      .buscarPrestadores({
+        categoria: categoriaAtiva,
+        termo: busca.trim() || undefined,
+      })
+      .then((res) => setProfissionais(res.itens))
+      .catch((err) => console.error('Erro ao carregar prestadores:', err))
+      .finally(() => setLoadingProfissionais(false))
+  }, [categoriaAtiva])
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -148,21 +94,10 @@ export default function Home() {
     }
   }
 
-  const handleCategoryClick = (catId: string) => {
-    setCategoriaAtiva(catId)
-    navigate(`/busca?categoria=${catId}`)
+  const handleCategoryClick = (slug: string) => {
+    const novoSlug = categoriaAtiva === slug ? null : slug
+    setCategoriaAtiva(novoSlug)
   }
-
-  const profissionaisFiltrados = PROFISSIONAIS_INICIAIS.filter((p) => {
-    const matchBusca =
-      busca.trim() === '' ||
-      p.nome.toLowerCase().includes(busca.toLowerCase()) ||
-      p.profissao.toLowerCase().includes(busca.toLowerCase())
-
-    const matchCategoria = !categoriaAtiva || p.categoria === categoriaAtiva
-
-    return matchBusca && matchCategoria
-  })
 
   return (
     <div className="home-viewport">
@@ -333,19 +268,25 @@ export default function Home() {
             </div>
 
             <div className="categories-grid">
-              {CATEGORIAS.map((cat) => {
-                const isActive = categoriaAtiva === cat.id
-                return (
-                  <button
-                    key={cat.id}
-                    className={`category-card ${isActive ? 'active' : ''}`}
-                    onClick={() => handleCategoryClick(cat.id)}
-                  >
-                    <div className="category-icon-circle">{cat.icon}</div>
-                    <span className="category-label">{cat.nome}</span>
-                  </button>
-                )
-              })}
+              {loadingCategorias ? (
+                <div style={{ padding: '20px', color: '#64748b', fontSize: '14px' }}>
+                  Carregando categorias...
+                </div>
+              ) : (
+                categorias.map((cat) => {
+                  const isActive = categoriaAtiva === cat.slug
+                  return (
+                    <button
+                      key={cat.id}
+                      className={`category-card ${isActive ? 'active' : ''}`}
+                      onClick={() => handleCategoryClick(cat.slug)}
+                    >
+                      <div className="category-icon-circle">{getCategoryIcon(cat.slug)}</div>
+                      <span className="category-label">{cat.nome}</span>
+                    </button>
+                  )
+                })
+              )}
             </div>
           </section>
 
@@ -361,80 +302,108 @@ export default function Home() {
             </div>
 
             <div className="professionals-grid">
-              {profissionaisFiltrados.map((prof) => (
-                <article key={prof.id} className="professional-card">
-                  <div className="prof-top">
-                    <div className="prof-avatar-wrapper">
-                      <img
-                        src={prof.avatar}
-                        alt={prof.nome}
-                        className="prof-avatar-img"
-                      />
+              {loadingProfissionais ? (
+                <div style={{ padding: '30px', color: '#64748b', fontSize: '14px', gridColumn: '1 / -1' }}>
+                  Carregando profissionais disponíveis...
+                </div>
+              ) : profissionais.length === 0 ? (
+                <div style={{ padding: '30px', color: '#64748b', fontSize: '14px', gridColumn: '1 / -1' }}>
+                  Nenhum profissional encontrado para os filtros selecionados.
+                </div>
+              ) : (
+                profissionais.map((prof) => (
+                  <article key={prof.id} className="professional-card">
+                    <div className="prof-top">
+                      <div className="prof-avatar-wrapper">
+                        {prof.avatar ? (
+                          <img
+                            src={prof.avatar}
+                            alt={prof.nome}
+                            className="prof-avatar-img"
+                          />
+                        ) : (
+                          <div
+                            className="prof-avatar-img"
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              background: '#0056D6',
+                              color: '#ffffff',
+                            }}
+                          >
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                              <circle cx="12" cy="7" r="4" />
+                            </svg>
+                          </div>
+                        )}
+                        <span
+                          className={`prof-check-badge ${
+                            prof.tipoBadge === 'super' ? 'super' : ''
+                          }`}
+                        >
+                          {prof.tipoBadge === 'super' ? (
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="white">
+                              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                            </svg>
+                          ) : (
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          )}
+                        </span>
+                      </div>
+
+                      <div className="prof-main-info">
+                        <h4 className="prof-name">{prof.nome}</h4>
+                        <p className="prof-service">{prof.profissao}</p>
+                        <div className="prof-rating-row">
+                          <span className="star-icon">★</span>
+                          <span className="rating-score">{(prof.avaliacao || 5.0).toFixed(1)}</span>
+                          <span className="rating-count">
+                            ({prof.numAvaliacoes || 0} avaliações)
+                          </span>
+                        </div>
+                      </div>
+
                       <span
-                        className={`prof-check-badge ${
-                          prof.badgeTipo === 'super' ? 'super' : ''
+                        className={`prof-status-pill ${
+                          prof.tipoBadge === 'verificado'
+                            ? 'pill-verificado'
+                            : prof.tipoBadge === 'super'
+                            ? 'pill-superprestadora'
+                            : 'pill-disponivel'
                         }`}
                       >
-                        {prof.badgeTipo === 'super' ? (
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="white">
-                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                          </svg>
-                        ) : (
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
-                        )}
+                        {prof.badgeTexto || 'Verificado'}
                       </span>
                     </div>
 
-                    <div className="prof-main-info">
-                      <h4 className="prof-name">{prof.nome}</h4>
-                      <p className="prof-service">{prof.profissao}</p>
-                      <div className="prof-rating-row">
-                        <span className="star-icon">★</span>
-                        <span className="rating-score">{prof.avaliacao.toFixed(1)}</span>
-                        <span className="rating-count">
-                          ({prof.numAvaliacoes} avaliações)
-                        </span>
-                      </div>
+                    <div className="prof-bottom">
+                      <span className="prof-distance">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <polygon points="3 11 22 2 13 21 11 13 3 11" />
+                        </svg>
+                        {prof.distanciaTexto || (prof.distanciaKm ? `a ${prof.distanciaKm.toFixed(1)} km de você` : 'Próximo a você')}
+                      </span>
+                      <span className="prof-price">{prof.precoTexto || `R$ ${prof.precoHora}/hora`}</span>
+                      
+                      {/* Botão Ver Perfil SEMPRE presente no card (mobile e desktop) */}
+                      <button
+                        className="prof-action-btn"
+                        onClick={() => navigate(`/prestador/${prof.id}`)}
+                        title={`Ver perfil completo de ${prof.nome}`}
+                      >
+                        <span>Ver Perfil</span>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="9 18 15 12 9 6" />
+                        </svg>
+                      </button>
                     </div>
-
-                    <span
-                      className={`prof-status-pill ${
-                        prof.badgeTipo === 'verificado'
-                          ? 'pill-verificado'
-                          : prof.badgeTipo === 'super'
-                          ? 'pill-superprestadora'
-                          : 'pill-disponivel'
-                      }`}
-                    >
-                      {prof.badgeTexto}
-                    </span>
-                  </div>
-
-                  <div className="prof-bottom">
-                    <span className="prof-distance">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <polygon points="3 11 22 2 13 21 11 13 3 11" />
-                      </svg>
-                      a {prof.distancia} de você
-                    </span>
-                    <span className="prof-price">R$ {prof.precoHora}/hora</span>
-                    
-                    {/* Botão Ver Perfil SEMPRE presente no card (mobile e desktop) */}
-                    <button
-                      className="prof-action-btn"
-                      onClick={() => navigate(`/prestador/${prof.id}`)}
-                      title={`Ver perfil completo de ${prof.nome}`}
-                    >
-                      <span>Ver Perfil</span>
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="9 18 15 12 9 6" />
-                      </svg>
-                    </button>
-                  </div>
-                </article>
-              ))}
+                  </article>
+                ))
+              )}
             </div>
           </section>
 

@@ -1,3 +1,5 @@
+using Conecta.Domain.Enums;
+
 namespace Conecta.Domain.Entidades;
 
 public class Proposta
@@ -8,7 +10,7 @@ public class Proposta
     public decimal ValorTotal { get; set; }
     public int? PrazoDias { get; set; }
     public string? Descricao { get; set; }
-    public string Status { get; set; } = "ENVIADA"; // ENVIADA, VISUALIZADA, ACEITA, RECUSADA, EXPIRADA
+    public StatusProposta Status { get; set; } = StatusProposta.ENVIADA;
     public DateTime CriadoEm { get; set; } = DateTime.UtcNow;
     public DateTime AtualizadoEm { get; set; } = DateTime.UtcNow;
 

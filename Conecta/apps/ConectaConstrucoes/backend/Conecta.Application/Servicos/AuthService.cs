@@ -1,5 +1,6 @@
 using Conecta.Application.DTOs;
 using Conecta.Application.Servicos.Seguranca;
+using Conecta.Domain.Enums;
 using Conecta.Domain.Interfaces;
 
 namespace Conecta.Application.Servicos;
@@ -31,7 +32,7 @@ public class AuthService : IAuthService
             throw new UnauthorizedAccessException("Credenciais inválidas.");
         }
 
-        if (usuario.StatusConta == "BLOQUEADA" || usuario.StatusConta == "SUSPENSA")
+        if (usuario.StatusConta == StatusConta.BLOQUEADA || usuario.StatusConta == StatusConta.SUSPENSA)
         {
             throw new UnauthorizedAccessException($"Conta do usuário está {usuario.StatusConta}.");
         }
@@ -61,9 +62,9 @@ public class AuthService : IAuthService
             usuario.Id,
             usuario.Nome,
             usuario.Email,
-            usuario.Tipo,
-            usuario.StatusVerificacao,
-            usuario.StatusConta,
+            usuario.Perfil,
+            usuario.StatusVerificacao.ToString(),
+            usuario.StatusConta.ToString(),
             usuario.UltimoAcessoEm,
             usuario.CriadoEm,
             usuario.AtualizadoEm,

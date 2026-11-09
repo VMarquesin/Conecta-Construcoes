@@ -1,5 +1,7 @@
 using Conecta.Domain.Entidades;
+using Conecta.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
+using Npgsql.NameTranslation;
 
 namespace Conecta.Infrastructure.Data;
 
@@ -39,11 +41,25 @@ public class AppDbContext : DbContext
     public DbSet<RolePermissao> RolePermissoes => Set<RolePermissao>();
     public DbSet<Denuncia> Denuncias => Set<Denuncia>();
     public DbSet<DocumentoPrestador> DocumentosPrestadores => Set<DocumentoPrestador>();
+    public DbSet<DocumentoCliente> DocumentosClientes => Set<DocumentoCliente>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        // 0. Registro de Enums nativos do PostgreSQL
+        var nullTranslator = new NpgsqlNullNameTranslator();
+        modelBuilder.HasPostgresEnum<StatusDisponibilidade>(name: "status_disponibilidade", nameTranslator: nullTranslator);
+        modelBuilder.HasPostgresEnum<StatusSolicitacao>(name: "status_solicitacao", nameTranslator: nullTranslator);
+        modelBuilder.HasPostgresEnum<StatusProposta>(name: "status_proposta", nameTranslator: nullTranslator);
+        modelBuilder.HasPostgresEnum<StatusPedido>(name: "status_pedido", nameTranslator: nullTranslator);
+        modelBuilder.HasPostgresEnum<TipoMensagem>(name: "tipo_mensagem", nameTranslator: nullTranslator);
+        modelBuilder.HasPostgresEnum<StatusVerificacao>(name: "status_verificacao", nameTranslator: nullTranslator);
+        modelBuilder.HasPostgresEnum<StatusConta>(name: "status_conta", nameTranslator: nullTranslator);
+        modelBuilder.HasPostgresEnum<StatusDocumento>(name: "status_documento", nameTranslator: nullTranslator);
+        modelBuilder.HasPostgresEnum<TipoDenuncia>(name: "tipo_denuncia", nameTranslator: nullTranslator);
+        modelBuilder.HasPostgresEnum<StatusDenuncia>(name: "status_denuncia", nameTranslator: nullTranslator);
 
         // Mapeamento: usuarios
         modelBuilder.Entity<Usuario>(entity =>
@@ -62,8 +78,8 @@ public class AppDbContext : DbContext
             entity.Property(e => e.MediaAvaliacao).HasColumnName("media_avaliacao").HasPrecision(3, 2);
             entity.Property(e => e.TotalAvaliacoes).HasColumnName("total_avaliacoes");
             entity.Property(e => e.TermosAceitosEm).HasColumnName("termos_aceitos_em");
-            entity.Property(e => e.StatusVerificacao).HasColumnName("status_verificacao").HasColumnType("varchar(50)");
-            entity.Property(e => e.StatusConta).HasColumnName("status_conta").HasColumnType("varchar(50)");
+            entity.Property(e => e.StatusVerificacao).HasColumnName("status_verificacao").HasColumnType("status_verificacao");
+            entity.Property(e => e.StatusConta).HasColumnName("status_conta").HasColumnType("status_conta");
             entity.Property(e => e.UltimoAcessoEm).HasColumnName("ultimo_acesso_em");
             entity.Property(e => e.CriadoEm).HasColumnName("criado_em");
             entity.Property(e => e.AtualizadoEm).HasColumnName("atualizado_em");
@@ -106,7 +122,7 @@ public class AppDbContext : DbContext
             entity.Property(e => e.Latitude).HasColumnName("latitude").HasPrecision(10, 8);
             entity.Property(e => e.Longitude).HasColumnName("longitude").HasPrecision(11, 8);
             entity.Property(e => e.RaioAtendimentoKm).HasColumnName("raio_atendimento_km");
-            entity.Property(e => e.StatusDisponibilidade).HasColumnName("status_disponibilidade").HasColumnType("varchar(50)");
+            entity.Property(e => e.StatusDisponibilidade).HasColumnName("status_disponibilidade").HasColumnType("status_disponibilidade");
             entity.Property(e => e.PlanoAssinatura).HasColumnName("plano_assinatura");
             entity.Property(e => e.DestaqueRegiao).HasColumnName("destaque_regiao");
             entity.Property(e => e.SeloSuperprestador).HasColumnName("selo_superprestador");
@@ -249,7 +265,7 @@ public class AppDbContext : DbContext
             entity.HasKey(e => new { e.RoleId, e.PermissaoId });
             entity.Property(e => e.RoleId).HasColumnName("role_id");
             entity.Property(e => e.PermissaoId).HasColumnName("permissao_id");
-            entity.Property(e => e.AtribuidoEm).HasColumnName("atribuido_em");
+            entity.Ignore(e => e.AtribuidoEm);
 
             entity.HasOne(e => e.Role)
                 .WithMany(r => r.RolePermissoes)
@@ -376,7 +392,7 @@ public class AppDbContext : DbContext
             entity.Property(e => e.EnderecoAtendimento).HasColumnName("endereco_atendimento");
             entity.Property(e => e.Titulo).HasColumnName("titulo").HasMaxLength(255).IsRequired();
             entity.Property(e => e.Descricao).HasColumnName("descricao").IsRequired();
-            entity.Property(e => e.Status).HasColumnName("status").HasColumnType("varchar(50)");
+            entity.Property(e => e.Status).HasColumnName("status").HasColumnType("status_solicitacao");
             entity.Property(e => e.Latitude).HasColumnName("latitude").HasPrecision(10, 8);
             entity.Property(e => e.Longitude).HasColumnName("longitude").HasPrecision(11, 8);
             entity.Property(e => e.CriadoEm).HasColumnName("criado_em");
@@ -430,7 +446,7 @@ public class AppDbContext : DbContext
             entity.Property(e => e.ValorTotal).HasColumnName("valor_total").HasPrecision(10, 2).IsRequired();
             entity.Property(e => e.PrazoDias).HasColumnName("prazo_dias");
             entity.Property(e => e.Descricao).HasColumnName("descricao");
-            entity.Property(e => e.Status).HasColumnName("status").HasColumnType("varchar(50)");
+            entity.Property(e => e.Status).HasColumnName("status").HasColumnType("status_proposta");
             entity.Property(e => e.CriadoEm).HasColumnName("criado_em");
             entity.Property(e => e.AtualizadoEm).HasColumnName("atualizado_em");
 
@@ -474,7 +490,7 @@ public class AppDbContext : DbContext
             entity.Property(e => e.EnderecoId).HasColumnName("endereco_id");
             entity.Property(e => e.EnderecoAtendimento).HasColumnName("endereco_atendimento");
             entity.Property(e => e.DescricaoNecessidade).HasColumnName("descricao_necessidade").IsRequired();
-            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(50);
+            entity.Property(e => e.Status).HasColumnName("status").HasColumnType("status_pedido");
             entity.Property(e => e.ValorCombinado).HasColumnName("valor_combinado").HasPrecision(10, 2);
             entity.Property(e => e.ValorFinal).HasColumnName("valor_final").HasPrecision(10, 2);
             entity.Property(e => e.DataSolicitacao).HasColumnName("data_solicitacao");
@@ -547,7 +563,7 @@ public class AppDbContext : DbContext
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.ConversaId).HasColumnName("conversa_id");
             entity.Property(e => e.RemetenteId).HasColumnName("remetente_id");
-            entity.Property(e => e.Tipo).HasColumnName("tipo").HasColumnType("varchar(50)");
+            entity.Property(e => e.Tipo).HasColumnName("tipo").HasColumnType("tipo_mensagem");
             entity.Property(e => e.Conteudo).HasColumnName("conteudo");
             entity.Property(e => e.Lida).HasColumnName("lida");
             entity.Property(e => e.LidaEm).HasColumnName("lida_em");
@@ -589,10 +605,10 @@ public class AppDbContext : DbContext
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.UsuarioDenuncianteId).HasColumnName("usuario_denunciante_id");
             entity.Property(e => e.UsuarioDenunciadoId).HasColumnName("usuario_denunciado_id");
-            entity.Property(e => e.TipoDenuncia).HasColumnName("tipo_denuncia").HasColumnType("varchar(50)");
+            entity.Property(e => e.TipoDenuncia).HasColumnName("tipo_denuncia").HasColumnType("tipo_denuncia");
             entity.Property(e => e.Motivo).HasColumnName("motivo");
             entity.Property(e => e.Descricao).HasColumnName("descricao");
-            entity.Property(e => e.Status).HasColumnName("status").HasColumnType("varchar(50)");
+            entity.Property(e => e.Status).HasColumnName("status").HasColumnType("status_denuncia");
             entity.Property(e => e.AnalisadoPor).HasColumnName("analisado_por");
             entity.Property(e => e.Resultado).HasColumnName("resultado");
             entity.Property(e => e.CriadoEm).HasColumnName("criado_em");
@@ -618,7 +634,7 @@ public class AppDbContext : DbContext
             entity.Property(e => e.PrestadorId).HasColumnName("prestador_id");
             entity.Property(e => e.TipoDocumento).HasColumnName("tipo_documento").HasMaxLength(50);
             entity.Property(e => e.ArquivoUrl).HasColumnName("arquivo_url").HasMaxLength(500);
-            entity.Property(e => e.Status).HasColumnName("status").HasColumnType("varchar(50)");
+            entity.Property(e => e.Status).HasColumnName("status").HasColumnType("status_documento");
             entity.Property(e => e.MotivoRejeicao).HasColumnName("motivo_rejeicao");
             entity.Property(e => e.SubmetidoEm).HasColumnName("submetido_em");
             entity.Property(e => e.AnalisadoEm).HasColumnName("analisado_em");
@@ -627,6 +643,27 @@ public class AppDbContext : DbContext
             entity.HasOne(e => e.Prestador)
                 .WithMany()
                 .HasForeignKey(e => e.PrestadorId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Mapeamento: documentos_cliente
+        modelBuilder.Entity<DocumentoCliente>(entity =>
+        {
+            entity.ToTable("documentos_cliente");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.ClienteId).HasColumnName("cliente_id");
+            entity.Property(e => e.TipoDocumento).HasColumnName("tipo_documento").HasMaxLength(50);
+            entity.Property(e => e.ArquivoUrl).HasColumnName("arquivo_url").HasMaxLength(500);
+            entity.Property(e => e.Status).HasColumnName("status").HasColumnType("status_documento");
+            entity.Property(e => e.MotivoRejeicao).HasColumnName("motivo_rejeicao");
+            entity.Property(e => e.SubmetidoEm).HasColumnName("submetido_em");
+            entity.Property(e => e.AnalisadoEm).HasColumnName("analisado_em");
+            entity.Property(e => e.AnalisadoPor).HasColumnName("analisado_por");
+
+            entity.HasOne(e => e.Cliente)
+                .WithMany()
+                .HasForeignKey(e => e.ClienteId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 

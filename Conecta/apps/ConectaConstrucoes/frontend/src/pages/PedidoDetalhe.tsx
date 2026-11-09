@@ -1,18 +1,20 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useChat } from '../context/ChatContext'
 import HeaderChatButton from '../components/chat/HeaderChatButton'
 import AccountTrigger from '../components/session/AccountTrigger'
+import { pedidoService, type PedidoDetalheResponse } from '../features/cliente/services/pedidoService'
 import './PedidoDetalhe.css'
-
-import carlosAvatar from '../assets/avatars/carlos.jpg'
-import quadroDisjuntores from '../assets/portfolio/quadro.jpg'
 
 export default function PedidoDetalhe() {
   const navigate = useNavigate()
   const { abrirChat } = useChat()
   const { id } = useParams<{ id?: string }>()
-  const pedidoNumero = id || '1042'
+  const pedidoNumero = id || '1'
+
+  const [pedido, setPedido] = useState<PedidoDetalheResponse | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [erro, setErro] = useState<string | null>(null)
 
   const [modalFotoAberta, setModalFotoAberta] = useState(false)
   const [modalPagamentoAberto, setModalPagamentoAberto] = useState(false)
@@ -20,22 +22,52 @@ export default function PedidoDetalhe() {
   const [metodoPagamento, setMetodoPagamento] = useState<'pix' | 'cartao'>('pix')
   const [pedidoCancelado, setPedidoCancelado] = useState(false)
 
-  const handleCancelar = () => {
+  const carregarDetalhe = () => {
+    setLoading(true)
+    setErro(null)
+    pedidoService
+      .obterDetalhesPedido(Number(pedidoNumero))
+      .then((data) => setPedido(data))
+      .catch((err) => {
+        console.error('Erro ao obter detalhes do pedido:', err)
+        setErro('Não foi possível carregar os detalhes do pedido.')
+      })
+      .finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    carregarDetalhe()
+  }, [pedidoNumero])
+
+  const handleCancelar = async () => {
     if (confirm('Tem certeza que deseja cancelar o pedido #' + pedidoNumero + '? O cancelamento é gratuito.')) {
-      setPedidoCancelado(true)
-      setTimeout(() => {
-        navigate('/pedidos')
-      }, 1200)
+      try {
+        await pedidoService.cancelarPedido(Number(pedidoNumero))
+        setPedidoCancelado(true)
+        setTimeout(() => {
+          navigate('/pedidos')
+        }, 1200)
+      } catch (err: any) {
+        console.error('Erro ao cancelar pedido:', err)
+        alert(err.message || 'Erro ao cancelar o pedido.')
+      }
     }
   }
 
-  const handleConcluirPagamento = () => {
-    setPagamentoConcluido(true)
-    setTimeout(() => {
-      setModalPagamentoAberto(false)
-      setPagamentoConcluido(false)
-      alert('Pagamento realizado com sucesso! O valor foi retido com segurança na Garantia Conecta Protege.')
-    }, 1500)
+  const handleConcluirPagamento = async () => {
+    try {
+      await pedidoService.confirmarPagamento(Number(pedidoNumero), metodoPagamento)
+      setPagamentoConcluido(true)
+      setTimeout(() => {
+        setModalPagamentoAberto(false)
+        setPagamentoConcluido(false)
+        alert('Pagamento realizado com sucesso! O valor foi retido com segurança na Garantia Conecta Protege.')
+        carregarDetalhe()
+      }, 1500)
+    } catch (err: any) {
+      console.error('Erro ao realizar pagamento:', err)
+      alert(err.message || 'Erro ao processar pagamento.')
+    }
   }
 
   return (
@@ -103,9 +135,13 @@ export default function PedidoDetalhe() {
             <div className="pedido-heading-info">
               <div className="pedido-heading-row">
                 <h1 className="pedido-title">Pedido #{pedidoNumero}</h1>
-                <span className="pedido-status-badge badge-aceito">Aceito</span>
+                <span className={`pedido-status-badge ${pedido?.status === 'CONCLUIDO' ? 'badge-concluido' : pedido?.status === 'CANCELADO' ? 'badge-cancelado' : 'badge-aceito'}`}>
+                  {pedido?.statusTexto || 'Carregando...'}
+                </span>
               </div>
-              <span className="pedido-timestamp">Criado hoje às 14:30</span>
+              <span className="pedido-timestamp">
+                {pedido?.dataCriacao ? new Date(pedido.dataCriacao).toLocaleDateString() : 'Hoje'}
+              </span>
             </div>
           </div>
 
@@ -131,6 +167,18 @@ export default function PedidoDetalhe() {
         {pedidoCancelado && (
           <div className="pedido-cancelado-toast">
             Pedido cancelado com sucesso. Redirecionando para Meus Pedidos...
+          </div>
+        )}
+
+        {erro && (
+          <div style={{ padding: '14px', margin: '14px 0', borderRadius: '12px', background: '#fee2e2', color: '#b91c1c', textAlign: 'center', fontSize: '14px' }}>
+            {erro}
+          </div>
+        )}
+
+        {loading && (
+          <div style={{ padding: '20px', textAlign: 'center', color: '#64748b' }}>
+            <p>Carregando dados atualizados do pedido...</p>
           </div>
         )}
 
@@ -201,7 +249,7 @@ export default function PedidoDetalhe() {
                   </svg>
                 </div>
                 <p className="info-text">
-                  Carlos aceitou seu chamado! Combine o horário exato pelo chat integrado para que o deslocamento seja iniciado com segurança.
+                  {pedido?.statusTexto ? `Status do chamado: ${pedido.statusTexto}. Combine os detalhes com o profissional pelo chat integrado.` : 'Aguardando atualização do profissional.'}
                 </p>
               </div>
             </div>
@@ -210,36 +258,38 @@ export default function PedidoDetalhe() {
             <div className="detalhe-card resumo-card">
               <div className="resumo-header-row">
                 <h2 className="card-section-title">Resumo do Serviço</h2>
-                <span className="tag-categoria">Elétrica</span>
+                <span className="tag-categoria">Serviço</span>
               </div>
 
-              <h3 className="servico-nome">Troca de fiação do chuveiro e disjuntores</h3>
+              <h3 className="servico-nome">{pedido?.tituloServico || 'Serviço Solicitado'}</h3>
 
               {/* Descrição do Cliente em Balão */}
               <div className="cliente-descricao-box">
                 <p>
-                  “Disjuntor bipolar de 30A desarmando constantemente quando o chuveiro é ligado. Necessário avaliar o cabeamento de 6mm e trocar disjuntor para dimensionamento seguro com a fiação do quadro.”
+                  {pedido?.descricaoServico || 'Sem descrição informada.'}
                 </p>
               </div>
 
-              {/* Foto do local anexada */}
-              <div className="foto-anexada-section">
-                <div className="foto-section-header">
-                  <span className="foto-section-title">Foto do local anexada</span>
-                  <span className="foto-section-count">1 anexo</span>
-                </div>
+              {/* Foto do local anexada (se houver) */}
+              {pedido?.fotoUrl && (
+                <div className="foto-anexada-section">
+                  <div className="foto-section-header">
+                    <span className="foto-section-title">Foto do local anexada</span>
+                    <span className="foto-section-count">1 anexo</span>
+                  </div>
 
-                <div className="foto-thumbnail-wrapper" onClick={() => setModalFotoAberta(true)} title="Clique para ampliar a foto do quadro">
-                  <img src={quadroDisjuntores} alt="Quadro de disjuntores" className="foto-thumbnail-img" />
-                  <div className="foto-overlay-tag">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-                      <circle cx="12" cy="13" r="4" />
-                    </svg>
-                    <span>Quadro_de_disjuntores.jpg</span>
+                  <div className="foto-thumbnail-wrapper" onClick={() => setModalFotoAberta(true)} title="Clique para ampliar a foto">
+                    <img src={pedido.fotoUrl} alt="Foto do local" className="foto-thumbnail-img" />
+                    <div className="foto-overlay-tag">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                        <circle cx="12" cy="13" r="4" />
+                      </svg>
+                      <span>Foto_anexada.jpg</span>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               {/* Metadados de Atendimento */}
               <div className="meta-info-list">
@@ -252,7 +302,7 @@ export default function PedidoDetalhe() {
                   </div>
                   <div className="meta-text-col">
                     <span className="meta-label">Local do Atendimento</span>
-                    <span className="meta-val">Casa (Padrão) - Av. Paulista, 1578 – Apto 82, Bela Vista, São Paulo - SP</span>
+                    <span className="meta-val">{pedido?.enderecoAtendimento || 'Endereço informado na contratação'}</span>
                   </div>
                 </div>
 
@@ -268,7 +318,7 @@ export default function PedidoDetalhe() {
                   <div className="meta-text-col">
                     <span className="meta-label">Data e Previsão</span>
                     <span className="meta-val">
-                      Hoje, a partir das 16:00 <strong className="meta-highlight">(A combinar no chat)</strong>
+                      {pedido?.agendadoPara ? new Date(pedido.agendadoPara).toLocaleString() : 'A combinar no chat'}
                     </span>
                   </div>
                 </div>
@@ -282,7 +332,16 @@ export default function PedidoDetalhe() {
             <div className="detalhe-card prestador-card">
               <div className="prestador-info-row">
                 <div className="prestador-avatar-container">
-                  <img src={carlosAvatar} alt="Carlos Silva" className="prestador-avatar-img" />
+                  {pedido?.prestadorAvatar ? (
+                    <img src={pedido.prestadorAvatar} alt={pedido.prestadorNome || 'Profissional'} className="prestador-avatar-img" />
+                  ) : (
+                    <div className="prestador-avatar-img" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0056D6', color: '#fff' }}>
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                        <circle cx="12" cy="7" r="4" />
+                      </svg>
+                    </div>
+                  )}
                   <span className="online-status-dot" title="Online agora" />
                   <div className="prestador-verificado-badge" title="Prestador verificado">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
@@ -293,21 +352,23 @@ export default function PedidoDetalhe() {
 
                 <div className="prestador-text-col">
                   <div className="prestador-nome-row">
-                    <h3 className="prestador-nome">Carlos Silva</h3>
-                    <span className="check-azul-icon" title="Verificado Conecta">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="#0056D6">
-                        <circle cx="12" cy="12" r="10" />
-                        <path d="M8 12l2.5 2.5L16 9" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </span>
+                    <h3 className="prestador-nome">{pedido?.prestadorNome || 'Profissional não identificado'}</h3>
+                    {pedido?.prestadorNome && (
+                      <span className="check-azul-icon" title="Verificado Conecta">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="#0056D6">
+                          <circle cx="12" cy="12" r="10" />
+                          <path d="M8 12l2.5 2.5L16 9" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </span>
+                    )}
                   </div>
-                  <span className="prestador-profissao">Eletricista Residencial & Predial</span>
+                  <span className="prestador-profissao">{pedido?.prestadorProfissao || 'Profissional da Construção'}</span>
                   <div className="prestador-rating-row">
                     <span className="star-icon">★</span>
-                    <strong className="rating-score">4.9</strong>
-                    <span className="rating-count">(128 avaliações)</span>
-                    <span className="rating-dot">•</span>
-                    <span className="rating-dist">a 2.5 km</span>
+                    <strong className="rating-score">{pedido?.prestadorNota ? pedido.prestadorNota.toFixed(1) : '5.0'}</strong>
+                    <span className="rating-count">
+                      {pedido?.prestadorTotalAvaliacoes ? `(${pedido.prestadorTotalAvaliacoes} avaliações)` : '(Novo profissional)'}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -316,7 +377,7 @@ export default function PedidoDetalhe() {
               <div className="prestador-buttons-row">
                 <button
                   className="btn-chat-principal"
-                  onClick={() => abrirChat('carlos-silva')}
+                  onClick={() => abrirChat(pedido?.prestadorId || 1)}
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
@@ -327,8 +388,8 @@ export default function PedidoDetalhe() {
 
                 <button
                   className="btn-call-circle"
-                  title="Ligar para Carlos Silva"
-                  onClick={() => alert('Ligação para o número de suporte protegido de Carlos Silva iniciada: (11) 98765-4321')}
+                  title={pedido?.prestadorNome ? `Ligar para ${pedido.prestadorNome}` : 'Ligar para o profissional'}
+                  onClick={() => alert(`Ligação de suporte para ${pedido?.prestadorNome || 'o profissional'} iniciada.`)}
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
@@ -372,9 +433,11 @@ export default function PedidoDetalhe() {
               <div className="valor-total-row">
                 <div className="total-col">
                   <span className="total-label">Valor Acordado</span>
-                  <span className="total-valor">R$ 180,00</span>
+                  <span className="total-valor">
+                    {pedido?.valorFinal != null ? `R$ ${pedido.valorFinal.toFixed(2)}` : (pedido?.valorCombinado != null ? `R$ ${pedido.valorCombinado.toFixed(2)}` : 'A combinar')}
+                  </span>
                 </div>
-                <div className="parcelas-tag">ou até 3x de R$ 60,00</div>
+                <div className="parcelas-tag">ou até 3x sem juros</div>
               </div>
 
               {/* Selo Conecta Protege */}
@@ -425,14 +488,14 @@ export default function PedidoDetalhe() {
         </div>
 
         {/* Modal de Zoom da Foto Anexada */}
-        {modalFotoAberta && (
+        {modalFotoAberta && pedido?.fotoUrl && (
           <div className="modal-overlay" onClick={() => setModalFotoAberta(false)}>
             <div className="modal-foto-content" onClick={(e) => e.stopPropagation()}>
               <div className="modal-foto-header">
-                <span>Quadro_de_disjuntores.jpg (Foto do local anexada)</span>
+                <span>Foto do local anexada</span>
                 <button className="modal-close-btn" onClick={() => setModalFotoAberta(false)}>✕</button>
               </div>
-              <img src={quadroDisjuntores} alt="Quadro de disjuntores ampliado" className="modal-foto-full" />
+              <img src={pedido.fotoUrl} alt="Foto do local ampliada" className="modal-foto-full" />
             </div>
           </div>
         )}
@@ -444,7 +507,7 @@ export default function PedidoDetalhe() {
               <div className="modal-pagamento-header">
                 <div>
                   <h3 className="modal-pagamento-title">Pagamento Seguro Conecta</h3>
-                  <span className="modal-pagamento-sub">Pedido #{pedidoNumero} • R$ 180,00</span>
+                  <span className="modal-pagamento-sub">Pedido #{pedidoNumero} • {pedido?.valorFinal != null ? `R$ ${pedido.valorFinal.toFixed(2)}` : 'A combinar'}</span>
                 </div>
                 <button className="modal-close-btn" onClick={() => setModalPagamentoAberto(false)}>✕</button>
               </div>
@@ -457,7 +520,7 @@ export default function PedidoDetalhe() {
                     </svg>
                   </div>
                   <h4>Pagamento Confirmado!</h4>
-                  <p>O valor foi retido com segurança. O Carlos Silva foi notificado para iniciar o atendimento.</p>
+                  <p>O valor foi retido com segurança. O prestador {pedido?.prestadorNome || 'responsável'} foi notificado para iniciar o atendimento.</p>
                 </div>
               ) : (
                 <div className="modal-pagamento-body">

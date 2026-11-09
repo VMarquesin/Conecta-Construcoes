@@ -9,6 +9,7 @@ import ProDashboard from '../pages/pro/ProDashboard'
 import ProAnaliseSolicitacao from '../pages/pro/ProAnaliseSolicitacao'
 import ProPortfolio from '../pages/pro/ProPortfolio'
 import Login from '../pages/Login'
+import CadastroClientePage from '../features/cliente/pages/CadastroClientePage'
 import RequirePerfil from '../components/session/RequirePerfil'
 import { PERFIL_INFO, useSession } from '../context/SessionContext'
 import AdminLayout from '../core/layout/AdminLayout'
@@ -27,6 +28,7 @@ export default function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/cadastro" element={<CadastroClientePage />} />
 
       {/* ===== Perfil CLIENTE ===== */}
       <Route element={<RequirePerfil perfil="CLIENTE" />}>

@@ -1,3 +1,5 @@
+using Conecta.Domain.Enums;
+
 namespace Conecta.Domain.Entidades;
 
 public class Solicitacao
@@ -10,7 +12,7 @@ public class Solicitacao
     public string? EnderecoAtendimento { get; set; }
     public string Titulo { get; set; } = string.Empty;
     public string Descricao { get; set; } = string.Empty;
-    public string Status { get; set; } = "ABERTA"; // ABERTA, AGUARDANDO_PROPOSTA, PROPOSTA_RECEBIDA, ACEITA, RECUSADA, CANCELADA
+    public StatusSolicitacao Status { get; set; } = StatusSolicitacao.ABERTA;
     public decimal? Latitude { get; set; }
     public decimal? Longitude { get; set; }
     public DateTime CriadoEm { get; set; } = DateTime.UtcNow;

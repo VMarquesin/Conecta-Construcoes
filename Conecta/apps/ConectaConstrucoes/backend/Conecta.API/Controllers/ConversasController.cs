@@ -69,22 +69,27 @@ public class ConversasController : ControllerBase
     }
 
     /// <summary>
-    /// Lista mensagens cronológicas de uma conversa.
+    /// Lista mensagens cronológicas de uma conversa ou pedido.
     /// </summary>
     [HttpGet("{id:int}/mensagens")]
     [ProducesResponseType(typeof(IEnumerable<MensagemItemResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> ListarMensagens(int id)
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ListarMensagens(int id, [FromQuery] int? usuarioId = null)
     {
-        var usuarioId = ObterUsuarioId();
         try
         {
-            var mensagens = await _chatService.ListarMensagensAsync(id, usuarioId);
+            var uId = ObterUsuarioId(usuarioId);
+            var mensagens = await _chatService.ListarMensagensAsync(id, uId);
             return Ok(mensagens);
         }
         catch (UnauthorizedAccessException ex)
         {
             return StatusCode(StatusCodes.Status403Forbidden, new { mensagem = ex.Message });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { mensagem = ex.Message });
         }
     }
 
@@ -95,11 +100,12 @@ public class ConversasController : ControllerBase
     [ProducesResponseType(typeof(MensagemItemResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> EnviarMensagem(int id, [FromBody] EnviarMensagemRequest request)
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> EnviarMensagem(int id, [FromBody] EnviarMensagemRequest request, [FromQuery] int? usuarioId = null)
     {
-        var remetenteId = ObterUsuarioId();
         try
         {
+            var remetenteId = ObterUsuarioId(usuarioId);
             var mensagemCriada = await _chatService.EnviarMensagemAsync(remetenteId, id, request);
             return CreatedAtAction(nameof(ListarMensagens), new { id }, mensagemCriada);
         }
@@ -118,10 +124,10 @@ public class ConversasController : ControllerBase
     /// </summary>
     [HttpPost("{id:int}/lidas")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> MarcarLidas(int id)
+    public async Task<IActionResult> MarcarLidas(int id, [FromQuery] int? usuarioId = null)
     {
-        var usuarioId = ObterUsuarioId();
-        await _chatService.MarcarComoLidasAsync(id, usuarioId);
+        var uId = ObterUsuarioId(usuarioId);
+        await _chatService.MarcarComoLidasAsync(id, uId);
         return Ok(new { sucesso = true });
     }
 
@@ -130,20 +136,26 @@ public class ConversasController : ControllerBase
     /// </summary>
     [HttpGet("nao-lidas/total")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> TotalNaoLidas()
+    public async Task<IActionResult> TotalNaoLidas([FromQuery] int? usuarioId = null)
     {
-        var usuarioId = ObterUsuarioId();
-        var total = await _chatService.ObterTotalNaoLidasAsync(usuarioId);
+        var uId = ObterUsuarioId(usuarioId);
+        var total = await _chatService.ObterTotalNaoLidasAsync(uId);
         return Ok(new { totalNaoLidas = total });
     }
 
-    private int ObterUsuarioId()
+    private int ObterUsuarioId(int? fallbackId = null)
     {
         var claimId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (!int.TryParse(claimId, out var id))
+        if (int.TryParse(claimId, out var id))
         {
-            throw new UnauthorizedAccessException("Usuário não autenticado.");
+            return id;
         }
-        return id;
+
+        if (fallbackId.HasValue && fallbackId.Value > 0)
+        {
+            return fallbackId.Value;
+        }
+
+        throw new UnauthorizedAccessException("Usuário não autenticado.");
     }
 }

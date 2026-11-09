@@ -34,11 +34,20 @@ export default function FloatingChatBox() {
         onClick={restaurarJanela}
         title={`Abrir conversa com ${chatJanelaAtiva.nome}`}
       >
-        <img
-          src={chatJanelaAtiva.avatar}
-          alt={chatJanelaAtiva.nome}
-          className="messenger-chat-head-avatar"
-        />
+        {chatJanelaAtiva.avatar ? (
+          <img
+            src={chatJanelaAtiva.avatar}
+            alt={chatJanelaAtiva.nome}
+            className="messenger-chat-head-avatar"
+          />
+        ) : (
+          <div className="messenger-chat-head-avatar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0056D6', color: '#fff' }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+          </div>
+        )}
         {chatJanelaAtiva.online && <span className="messenger-chat-head-online" />}
         <button
           className="messenger-chat-head-close"
@@ -71,11 +80,20 @@ export default function FloatingChatBox() {
       <div className="docked-header">
         <div className="docked-header-left" onClick={() => navigate(`/prestador/${chatJanelaAtiva.prestadorId}`)} style={{ cursor: 'pointer' }}>
           <div className="docked-avatar-wrap">
-            <img
-              src={chatJanelaAtiva.avatar}
-              alt={chatJanelaAtiva.nome}
-              className="docked-avatar"
-            />
+            {chatJanelaAtiva.avatar ? (
+              <img
+                src={chatJanelaAtiva.avatar}
+                alt={chatJanelaAtiva.nome}
+                className="docked-avatar"
+              />
+            ) : (
+              <div className="docked-avatar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#e2e8f0' }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2">
+                  <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+              </div>
+            )}
             {chatJanelaAtiva.online && <span className="docked-online-dot" />}
           </div>
           <div className="docked-user-meta">

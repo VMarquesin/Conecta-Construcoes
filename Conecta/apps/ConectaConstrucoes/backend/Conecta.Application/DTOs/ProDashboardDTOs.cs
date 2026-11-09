@@ -2,6 +2,15 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Conecta.Application.DTOs;
 
+public record ProEstatisticasResponse(
+    int UsuarioId,
+    string Nome,
+    int TotalPedidos,
+    int TotalAvaliacoes,
+    decimal MediaAvaliacoes,
+    int TotalServicosRealizados
+);
+
 public record ProMetricasSemanaDto(
     int PedidosAguardando,
     decimal AvaliacaoMedia,

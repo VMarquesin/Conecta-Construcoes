@@ -1,5 +1,6 @@
 using Conecta.Application.DTOs;
 using Conecta.Domain.Entidades;
+using Conecta.Domain.Enums;
 using Conecta.Domain.Interfaces;
 
 namespace Conecta.Application.Servicos;
@@ -7,10 +8,12 @@ namespace Conecta.Application.Servicos;
 public class ChatService : IChatService
 {
     private readonly IChatRepository _chatRepository;
+    private readonly IPedidoRepository _pedidoRepository;
 
-    public ChatService(IChatRepository chatRepository)
+    public ChatService(IChatRepository chatRepository, IPedidoRepository pedidoRepository)
     {
         _chatRepository = chatRepository;
+        _pedidoRepository = pedidoRepository;
     }
 
     public async Task<IEnumerable<ConversaResumoResponse>> ListarConversasDoUsuarioAsync(int usuarioId)
@@ -21,7 +24,7 @@ public class ChatService : IChatService
 
     public async Task<ConversaResumoResponse?> ObterConversaAsync(int conversaId, int usuarioId)
     {
-        var c = await _chatRepository.ObterPorIdAsync(conversaId);
+        var c = await ObterOuResolverConversaAsync(conversaId);
         if (c == null) return null;
 
         if (c.ClienteId != usuarioId && c.PrestadorId != usuarioId)
@@ -40,7 +43,7 @@ public class ChatService : IChatService
 
     public async Task<IEnumerable<MensagemItemResponse>> ListarMensagensAsync(int conversaId, int usuarioId)
     {
-        var conversa = await _chatRepository.ObterPorIdAsync(conversaId)
+        var conversa = await ObterOuResolverConversaAsync(conversaId)
             ?? throw new KeyNotFoundException($"Conversa #{conversaId} não encontrada.");
 
         if (conversa.ClienteId != usuarioId && conversa.PrestadorId != usuarioId)
@@ -48,13 +51,13 @@ public class ChatService : IChatService
             throw new UnauthorizedAccessException("Você não tem permissão para visualizar mensagens desta conversa.");
         }
 
-        var mensagens = await _chatRepository.ListarMensagensDaConversaAsync(conversaId);
+        var mensagens = await _chatRepository.ListarMensagensDaConversaAsync(conversa.Id);
         return mensagens.Select(m => MapearMensagem(m, conversa.ClienteId));
     }
 
     public async Task<MensagemItemResponse> EnviarMensagemAsync(int remetenteId, int conversaId, EnviarMensagemRequest request)
     {
-        var conversa = await _chatRepository.ObterPorIdAsync(conversaId)
+        var conversa = await ObterOuResolverConversaAsync(conversaId)
             ?? throw new KeyNotFoundException($"Conversa #{conversaId} não encontrada.");
 
         if (conversa.ClienteId != remetenteId && conversa.PrestadorId != remetenteId)
@@ -62,10 +65,10 @@ public class ChatService : IChatService
             throw new UnauthorizedAccessException("Você não faz parte desta conversa.");
         }
 
-        var tipo = !string.IsNullOrWhiteSpace(request.ImagemUrl) ? "IMAGEM" : "TEXTO";
+        var tipo = !string.IsNullOrWhiteSpace(request.ImagemUrl) ? TipoMensagem.IMAGEM : TipoMensagem.TEXTO;
         var mensagem = new Mensagem
         {
-            ConversaId = conversaId,
+            ConversaId = conversa.Id,
             RemetenteId = remetenteId,
             Tipo = tipo,
             Conteudo = request.Texto?.Trim(),
@@ -84,6 +87,23 @@ public class ChatService : IChatService
 
         var criada = await _chatRepository.AdicionarMensagemAsync(mensagem);
         return MapearMensagem(criada, conversa.ClienteId, request.ImagemLegenda);
+    }
+
+    private async Task<Conversa?> ObterOuResolverConversaAsync(int id)
+    {
+        var conversa = await _chatRepository.ObterPorIdAsync(id);
+        if (conversa != null) return conversa;
+
+        conversa = await _chatRepository.ObterPorPedidoIdAsync(id);
+        if (conversa != null) return conversa;
+
+        var pedido = await _pedidoRepository.ObterPorIdAsync(id);
+        if (pedido != null)
+        {
+            conversa = await _chatRepository.ObterOuCriarAsync(pedido.ClienteId, pedido.PrestadorId, pedido.Id);
+        }
+
+        return conversa;
     }
 
     public async Task MarcarComoLidasAsync(int conversaId, int usuarioLeitorId)
@@ -112,7 +132,7 @@ public class ChatService : IChatService
             : "Cliente Conecta";
 
         var ultimaMsg = c.Mensagens.FirstOrDefault();
-        var ultimaTexto = ultimaMsg?.Conteudo ?? (ultimaMsg?.Tipo == "IMAGEM" ? "[Foto anexa]" : "Conversa iniciada");
+        var ultimaTexto = ultimaMsg?.Conteudo ?? (ultimaMsg?.Tipo == TipoMensagem.IMAGEM ? "[Foto anexa]" : "Conversa iniciada");
         var tempoTexto = ultimaMsg != null ? FormatarTempoMinutos(ultimaMsg.EnviadoEm) : "Hoje";
         var naoLida = ultimaMsg != null && !ultimaMsg.Lida && ultimaMsg.RemetenteId != usuarioLogadoId;
 

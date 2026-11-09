@@ -1,3 +1,5 @@
+using Conecta.Domain.Enums;
+
 namespace Conecta.Domain.Entidades;
 
 public class Conversa
@@ -20,7 +22,7 @@ public class Mensagem
     public int Id { get; set; }
     public int ConversaId { get; set; }
     public int RemetenteId { get; set; }
-    public string Tipo { get; set; } = "TEXTO"; // TEXTO, IMAGEM, AUDIO, VIDEO, ARQUIVO
+    public TipoMensagem Tipo { get; set; } = TipoMensagem.TEXTO;
     public string? Conteudo { get; set; }
     public bool Lida { get; set; } = false;
     public DateTime? LidaEm { get; set; }

@@ -130,8 +130,14 @@ export default function MessengerDropdown() {
       {/* Lista de Conversas Recentes */}
       <div className="messenger-conversations-list">
         {conversasFiltradas.length === 0 ? (
-          <div className="messenger-empty-state">
-            <p>Nenhuma conversa encontrada</p>
+          <div className="messenger-empty-state" style={{ padding: '36px 16px', textAlign: 'center', color: '#64748b' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px' }}>
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.5">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+            </div>
+            <p style={{ fontWeight: 600, color: '#1e293b', margin: '0 0 4px', fontSize: '14px' }}>Nenhuma conversa ativa</p>
+            <span style={{ fontSize: '12px', lineHeight: '1.4' }}>Suas mensagens com prestadores e solicitações aparecerão aqui.</span>
           </div>
         ) : (
           conversasFiltradas.map((conv) => (
@@ -141,7 +147,16 @@ export default function MessengerDropdown() {
               onClick={() => abrirChat(conv.id)}
             >
               <div className="messenger-conv-avatar-wrap">
-                <img src={conv.avatar} alt={conv.nome} className="messenger-conv-avatar" />
+                {conv.avatar ? (
+                  <img src={conv.avatar} alt={conv.nome} className="messenger-conv-avatar" />
+                ) : (
+                  <div className="messenger-conv-avatar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#e2e8f0', borderRadius: '50%' }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2">
+                      <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                      <circle cx="12" cy="7" r="4" />
+                    </svg>
+                  </div>
+                )}
                 {conv.online && <span className="messenger-online-dot" title="Online agora" />}
               </div>
 

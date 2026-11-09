@@ -71,3 +71,12 @@ public record ModerarDenunciaRequest(
     string Acao,
     string? Observacao
 );
+
+public record AtribuirRoleRequest(
+    int RoleId
+);
+
+public record AtualizarStatusDenunciaRequest(
+    string Status,
+    string? Observacao
+);

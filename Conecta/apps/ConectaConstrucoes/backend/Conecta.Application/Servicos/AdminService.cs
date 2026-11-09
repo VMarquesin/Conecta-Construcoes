@@ -1,5 +1,6 @@
 using Conecta.Application.DTOs;
 using Conecta.Domain.Entidades;
+using Conecta.Domain.Enums;
 using Conecta.Domain.Interfaces;
 
 namespace Conecta.Application.Servicos;
@@ -45,9 +46,9 @@ public class AdminService : IAdminService
         if (!string.IsNullOrWhiteSpace(status))
         {
             if (status.Equals("BLOQUEADO", StringComparison.OrdinalIgnoreCase))
-                usuarios = usuarios.Where(u => !u.Ativo || u.StatusConta == "BLOQUEADA");
+                usuarios = usuarios.Where(u => !u.Ativo || u.StatusConta == StatusConta.BLOQUEADA);
             else if (status.Equals("ATIVO", StringComparison.OrdinalIgnoreCase))
-                usuarios = usuarios.Where(u => u.Ativo && u.StatusConta == "ATIVA");
+                usuarios = usuarios.Where(u => u.Ativo && u.StatusConta == StatusConta.ATIVA);
         }
 
         return usuarios.Select(u => MapearUsuario(u));
@@ -77,12 +78,12 @@ public class AdminService : IAdminService
             if (request.Status.Equals("BLOQUEADO", StringComparison.OrdinalIgnoreCase))
             {
                 usuario.Ativo = false;
-                usuario.StatusConta = "BLOQUEADA";
+                usuario.StatusConta = StatusConta.BLOQUEADA;
             }
             else if (request.Status.Equals("ATIVO", StringComparison.OrdinalIgnoreCase))
             {
                 usuario.Ativo = true;
-                usuario.StatusConta = "ATIVA";
+                usuario.StatusConta = StatusConta.ATIVA;
             }
         }
 
@@ -141,7 +142,7 @@ public class AdminService : IAdminService
             "PRESTADOR",
             d.TipoDocumento,
             d.SubmetidoEm.ToString("o"),
-            d.Status,
+            d.Status.ToString(),
             d.MotivoRejeicao
         ));
     }
@@ -167,7 +168,7 @@ public class AdminService : IAdminService
             d.Motivo,
             d.Descricao ?? "",
             d.CriadoEm.ToString("o"),
-            d.Status,
+            d.Status.ToString(),
             d.Resultado
         ));
     }
@@ -181,7 +182,7 @@ public class AdminService : IAdminService
     {
         var rolesNomes = u.UsuarioRoles?.Select(ur => ur.Role?.Nome ?? ur.RoleId.ToString()).ToList() ?? new List<string>();
         var tipo = u.Perfil?.ToUpper() ?? "CLIENTE";
-        var status = (!u.Ativo || u.StatusConta == "BLOQUEADA") ? "BLOQUEADO" : (u.StatusConta == "PENDENTE" ? "PENDENTE" : "ATIVO");
+        var status = (!u.Ativo || u.StatusConta == StatusConta.BLOQUEADA) ? "BLOQUEADO" : (u.StatusConta.ToString() == "PENDENTE" ? "PENDENTE" : "ATIVO");
 
         return new AdminUsuarioResponse(
             u.Id.ToString(),

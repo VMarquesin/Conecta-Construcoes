@@ -1,158 +1,74 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useChat } from '../context/ChatContext'
 import HeaderChatButton from '../components/chat/HeaderChatButton'
 import AccountTrigger from '../components/session/AccountTrigger'
+import { vitrineService, type PrestadorBuscaItemResponse } from '../features/cliente/services/vitrineService'
 import './Busca.css'
-
-import carlosAvatar from '../assets/avatars/carlos.jpg'
-import lucasAvatar from '../assets/avatars/lucas.jpg'
-import julianaAvatar from '../assets/avatars/juliana.jpg'
-import marianaAvatar from '../assets/avatars/mariana.jpg'
-import robertoAvatar from '../assets/avatars/roberto.jpg'
-import anaAvatar from '../assets/avatars/ana.jpg'
-
-interface ProfissionalBusca {
-  id: number
-  nome: string
-  avatar: string
-  destaqueRegiao?: boolean
-  tipoBadge: 'verificado' | 'super'
-  badgeTexto: string
-  profissao: string
-  avaliacao: number
-  numAvaliacoes: number
-  distanciaTexto: string
-  tags: string[]
-  precoTexto: string
-  precoLabel: string
-  categoria: string
-  temChat?: boolean
-}
-
-const PROFISSIONAIS_BUSCA: ProfissionalBusca[] = [
-  {
-    id: 1,
-    nome: 'Carlos Silva',
-    avatar: carlosAvatar,
-    destaqueRegiao: true,
-    tipoBadge: 'verificado',
-    badgeTexto: 'Verificado',
-    profissao: 'Eletricista Residencial & Comercial',
-    avaliacao: 4.9,
-    numAvaliacoes: 128,
-    distanciaTexto: 'a 1.8 km de você • Atende até 15 km',
-    tags: ['Quadro de luz', 'Fiação completa', 'Instalação de chuveiro e luminárias'],
-    precoLabel: 'A partir de',
-    precoTexto: 'R$ 90/hora',
-    categoria: 'eletrica',
-    temChat: true,
-  },
-  {
-    id: 2,
-    nome: 'Lucas Ferreira',
-    avatar: lucasAvatar,
-    tipoBadge: 'super',
-    badgeTexto: 'Superprestador',
-    profissao: 'Instalações Elétricas & Reparos de Emergência',
-    avaliacao: 5.0,
-    numAvaliacoes: 89,
-    distanciaTexto: 'a 2.2 km de você • Atendimento emergencial 24h',
-    tags: ['Plantão 24h', 'Troca de disjuntores', 'Tomadas e interruptores'],
-    precoLabel: 'Valor base',
-    precoTexto: 'R$ 95/hora',
-    categoria: 'eletrica',
-    temChat: false,
-  },
-  {
-    id: 3,
-    nome: 'Juliana Mendes',
-    avatar: julianaAvatar,
-    tipoBadge: 'verificado',
-    badgeTexto: 'Verificada',
-    profissao: 'Eletricista & Iluminação Decorativa',
-    avaliacao: 4.9,
-    numAvaliacoes: 64,
-    distanciaTexto: 'a 4.1 km de você • Projetos customizados',
-    tags: ['Fitas de LED', 'Projetos luminotécnicos', 'Cabeamento estruturado'],
-    precoLabel: 'A partir de',
-    precoTexto: 'R$ 100/hora',
-    categoria: 'eletrica',
-    temChat: false,
-  },
-  {
-    id: 4,
-    nome: 'Mariana Costa',
-    avatar: marianaAvatar,
-    tipoBadge: 'super',
-    badgeTexto: 'Superprestadora',
-    profissao: 'Pintora & Acabamentos Especiais',
-    avaliacao: 5.0,
-    numAvaliacoes: 94,
-    distanciaTexto: 'a 2.5 km de você • Atende toda a zona metropolitana',
-    tags: ['Pintura epóxi', 'Texturas e massas', 'Acabamentos finos'],
-    precoLabel: 'Valor base',
-    precoTexto: 'R$ 110/hora',
-    categoria: 'pintura',
-    temChat: true,
-  },
-  {
-    id: 5,
-    nome: 'Roberto Mendes',
-    avatar: robertoAvatar,
-    tipoBadge: 'verificado',
-    badgeTexto: 'Verificado',
-    profissao: 'Encanador & Desentupimento Especializado',
-    avaliacao: 4.8,
-    numAvaliacoes: 210,
-    distanciaTexto: 'a 3.1 km de você • Plantão para vazamentos',
-    tags: ['Caça-vazamentos', 'Desentupimentos', 'Troca de registros'],
-    precoLabel: 'A partir de',
-    precoTexto: 'R$ 85/hora',
-    categoria: 'encanador',
-    temChat: true,
-  },
-  {
-    id: 6,
-    nome: 'Ana Oliveira',
-    avatar: anaAvatar,
-    tipoBadge: 'verificado',
-    badgeTexto: 'Verificada',
-    profissao: 'Reformas & Pequenos Reparos em Geral',
-    avaliacao: 4.9,
-    numAvaliacoes: 67,
-    distanciaTexto: 'a 4.0 km de você • Orçamento rápido sem compromisso',
-    tags: ['Drywall', 'Alvenaria leve', 'Fixação de suportes e móveis'],
-    precoLabel: 'A partir de',
-    precoTexto: 'R$ 95/hora',
-    categoria: 'reformas',
-    temChat: false,
-  },
-]
 
 export default function Busca() {
   const navigate = useNavigate()
   const { abrirChat } = useChat()
   const [params, setParams] = useSearchParams()
-  const initialTermo = params.get('q') || params.get('categoria') || 'Eletricista residencial'
+  const initialTermo = params.get('q') || ''
+  const initialCategoria = params.get('categoria') || null
+
   const [termo, setTermo] = useState(initialTermo)
+  const [categoria, setCategoria] = useState<string | null>(initialCategoria)
   const [filtroAtivo, setFiltroAtivo] = useState<'proximos' | 'avaliados' | 'online' | 'todos'>('proximos')
+  const [profissionais, setProfissionais] = useState<PrestadorBuscaItemResponse[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const carregarProfissionais = () => {
+    setLoading(true)
+    const ordenacao = filtroAtivo === 'avaliados' ? 'avaliacao' : 'distancia'
+    const apenasDisponiveis = filtroAtivo === 'online'
+
+    vitrineService
+      .buscarPrestadores({
+        termo: termo.trim() || undefined,
+        categoria: categoria || undefined,
+        ordenacao,
+        apenasDisponiveis,
+      })
+      .then((res) => {
+        setProfissionais(res.itens)
+      })
+      .catch((err) => {
+        console.error('Erro ao buscar prestadores:', err)
+      })
+      .finally(() => {
+        setLoading(false)
+      })
+  }
+
+  useEffect(() => {
+    carregarProfissionais()
+  }, [filtroAtivo, categoria])
+
+  const handleSearchSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault()
+    if (termo.trim()) {
+      setParams({ q: termo.trim(), ...(categoria ? { categoria } : {}) })
+    } else {
+      setParams(categoria ? { categoria } : {})
+    }
+    carregarProfissionais()
+  }
 
   const handleLimpar = () => {
     setTermo('')
+    setCategoria(null)
     setParams({})
+    setLoading(true)
+    vitrineService
+      .buscarPrestadores()
+      .then((res) => setProfissionais(res.itens))
+      .catch((err) => console.error('Erro ao limpar busca:', err))
+      .finally(() => setLoading(false))
   }
 
-  const profissionaisFiltrados = PROFISSIONAIS_BUSCA.filter((p) => {
-    if (!termo.trim()) return true
-    const t = termo.toLowerCase()
-    return (
-      p.nome.toLowerCase().includes(t) ||
-      p.profissao.toLowerCase().includes(t) ||
-      p.categoria.toLowerCase().includes(t) ||
-      p.tags.some((tag) => tag.toLowerCase().includes(t))
-    )
-  })
+  const profissionaisFiltrados = profissionais
 
   return (
     <div className="busca-viewport">
@@ -168,7 +84,7 @@ export default function Busca() {
                 </svg>
               </Link>
 
-              <div className="busca-input-wrapper">
+              <form className="busca-input-wrapper" onSubmit={handleSearchSubmit}>
                 <span className="busca-input-icon">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="11" cy="11" r="8" />
@@ -183,26 +99,19 @@ export default function Busca() {
                   onChange={(e) => setTermo(e.target.value)}
                 />
                 {termo && (
-                  <button className="busca-clear-btn" onClick={handleLimpar} title="Limpar busca">
+                  <button type="button" className="busca-clear-btn" onClick={handleLimpar} title="Limpar busca">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <line x1="18" y1="6" x2="6" y2="18" />
                       <line x1="6" y1="6" x2="18" y2="18" />
                     </svg>
                   </button>
                 )}
-              </div>
+              </form>
 
-              <button className="filter-toggle-btn" title="Abrir opções de filtro">
+              <button className="filter-toggle-btn" onClick={() => handleSearchSubmit()} title="Buscar">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="4" y1="21" x2="4" y2="14" />
-                  <line x1="4" y1="10" x2="4" y2="3" />
-                  <line x1="12" y1="21" x2="12" y2="12" />
-                  <line x1="12" y1="8" x2="12" y2="3" />
-                  <line x1="20" y1="21" x2="20" y2="16" />
-                  <line x1="20" y1="12" x2="20" y2="3" />
-                  <line x1="1" y1="14" x2="7" y2="14" />
-                  <line x1="9" y1="8" x2="15" y2="8" />
-                  <line x1="17" y1="16" x2="23" y2="16" />
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
                 </svg>
               </button>
 
@@ -271,7 +180,11 @@ export default function Busca() {
         {/* Lista de Profissionais Encontrados */}
         <main className="busca-main">
           <div className="busca-cards-list">
-            {profissionaisFiltrados.length === 0 ? (
+            {loading ? (
+              <div style={{ textAlign: 'center', padding: '60px 20px', color: '#64748b' }}>
+                <p>Carregando profissionais...</p>
+              </div>
+            ) : profissionaisFiltrados.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '60px 20px', color: '#64748b' }}>
                 <h3>Nenhum profissional encontrado</h3>
                 <p>Tente buscar por outro termo ou categoria.</p>
@@ -300,7 +213,25 @@ export default function Busca() {
                   {/* Topo com Avatar e Informações */}
                   <div className="search-prof-header">
                     <div className="search-avatar-wrapper">
-                      <img src={prof.avatar} alt={prof.nome} className="search-avatar-img" />
+                      {prof.avatar ? (
+                        <img src={prof.avatar} alt={prof.nome} className="search-avatar-img" />
+                      ) : (
+                        <div
+                          className="search-avatar-img"
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            background: '#0056D6',
+                            color: '#ffffff',
+                          }}
+                        >
+                          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                            <circle cx="12" cy="7" r="4" />
+                          </svg>
+                        </div>
+                      )}
                       <span className={`search-check-badge ${prof.tipoBadge === 'super' ? 'super' : ''}`}>
                         {prof.tipoBadge === 'super' ? (
                           <svg width="10" height="10" viewBox="0 0 24 24" fill="white">

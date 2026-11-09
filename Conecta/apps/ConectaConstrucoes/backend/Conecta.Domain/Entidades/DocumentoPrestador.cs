@@ -1,3 +1,5 @@
+using Conecta.Domain.Enums;
+
 namespace Conecta.Domain.Entidades;
 
 public class DocumentoPrestador
@@ -6,7 +8,7 @@ public class DocumentoPrestador
     public int PrestadorId { get; set; }
     public string TipoDocumento { get; set; } = string.Empty;
     public string ArquivoUrl { get; set; } = string.Empty;
-    public string Status { get; set; } = "PENDENTE"; // PENDENTE, APROVADO, REJEITADO
+    public StatusDocumento Status { get; set; } = StatusDocumento.PENDENTE;
     public string? MotivoRejeicao { get; set; }
     public DateTime SubmetidoEm { get; set; } = DateTime.UtcNow;
     public DateTime? AnalisadoEm { get; set; }

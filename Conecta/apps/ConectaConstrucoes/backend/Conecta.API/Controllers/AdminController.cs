@@ -28,6 +28,7 @@ public class AdminController : ControllerBase
     /// Retorna os indicadores e resumo estatístico para o Dashboard do Administrador.
     /// </summary>
     [HttpGet("resumo")]
+    [HttpGet("dashboard")]
     public async Task<IActionResult> ObterResumo()
     {
         var resumo = await _adminService.ObterResumoAsync();
@@ -110,13 +111,39 @@ public class AdminController : ControllerBase
     }
 
     /// <summary>
+    /// Obtém as roles atribuídas a um usuário específico.
+    /// </summary>
+    [HttpGet("usuarios/{id}/roles")]
+    public async Task<IActionResult> ObterRolesDoUsuario(int id)
+    {
+        var usuario = await _adminService.ObterUsuarioPorIdAsync(id);
+        if (usuario == null)
+            return NotFound(new { mensagem = $"Usuário #{id} não encontrado." });
+
+        return Ok(usuario.Roles);
+    }
+
+    /// <summary>
     /// Atribui um papel funcional (RBAC) a um usuário específico.
     /// </summary>
     [HttpPut("usuarios/{usuarioId}/roles/{roleId}")]
+    [HttpPost("usuarios/{usuarioId}/roles/{roleId}")]
     public async Task<IActionResult> AtribuirRole(int usuarioId, int roleId)
     {
         await _adminService.AtribuirRoleAsync(usuarioId, roleId);
-        return Ok(new { mensagem = "Papel atribuído com sucesso." });
+        var atualizado = await _adminService.ObterUsuarioPorIdAsync(usuarioId);
+        return Ok(atualizado);
+    }
+
+    /// <summary>
+    /// Atribui um papel funcional via corpo da requisição.
+    /// </summary>
+    [HttpPost("usuarios/{usuarioId}/roles")]
+    public async Task<IActionResult> AtribuirRoleCorpo(int usuarioId, [FromBody] AtribuirRoleRequest request)
+    {
+        await _adminService.AtribuirRoleAsync(usuarioId, request.RoleId);
+        var atualizado = await _adminService.ObterUsuarioPorIdAsync(usuarioId);
+        return Ok(atualizado);
     }
 
     /// <summary>
@@ -126,7 +153,8 @@ public class AdminController : ControllerBase
     public async Task<IActionResult> RemoverRole(int usuarioId, int roleId)
     {
         await _adminService.RemoverRoleAsync(usuarioId, roleId);
-        return Ok(new { mensagem = "Papel removido com sucesso." });
+        var atualizado = await _adminService.ObterUsuarioPorIdAsync(usuarioId);
+        return Ok(atualizado);
     }
 
     /// <summary>
@@ -143,6 +171,7 @@ public class AdminController : ControllerBase
     /// Aprova um documento do prestador, conferindo o status de verificado na plataforma.
     /// </summary>
     [HttpPost("documentos/{id}/aprovacao")]
+    [HttpPost("documentos/{id}/aprovar")]
     public async Task<IActionResult> AprovarDocumento(int id)
     {
         var adminId = ObterAdminId();
@@ -154,6 +183,7 @@ public class AdminController : ControllerBase
     /// Rejeita um documento submetido pelo prestador registrando o motivo para correção.
     /// </summary>
     [HttpPost("documentos/{id}/rejeicao")]
+    [HttpPost("documentos/{id}/rejeitar")]
     public async Task<IActionResult> RejeitarDocumento(int id, [FromBody] RejeitarDocumentoRequest request)
     {
         var adminId = ObterAdminId();
@@ -175,6 +205,7 @@ public class AdminController : ControllerBase
     /// Modera uma denúncia aplicando a ação cabível (ARQUIVAR, ADVERTIR, RESOLVIDA, BANIDO).
     /// </summary>
     [HttpPost("denuncias/{id}/moderacao")]
+    [HttpPut("denuncias/{id}/status")]
     public async Task<IActionResult> ModerarDenuncia(int id, [FromBody] ModerarDenunciaRequest request)
     {
         var adminId = ObterAdminId();

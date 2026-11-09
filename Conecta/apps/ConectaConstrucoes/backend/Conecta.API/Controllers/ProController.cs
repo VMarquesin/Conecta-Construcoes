@@ -27,12 +27,12 @@ public class ProController : ControllerBase
     /// </summary>
     [HttpGet("dashboard")]
     [ProducesResponseType(typeof(ProDashboardResponse), StatusCodes.Status200OK)]
-    public async Task<IActionResult> ObterDashboard()
+    public async Task<IActionResult> ObterDashboard([FromQuery] int? prestadorId = null)
     {
-        var prestadorId = ObterUsuarioId();
+        var id = ObterUsuarioId(prestadorId);
         try
         {
-            var dashboard = await _proService.ObterDashboardAsync(prestadorId);
+            var dashboard = await _proService.ObterDashboardAsync(id);
             return Ok(dashboard);
         }
         catch (KeyNotFoundException ex)
@@ -42,16 +42,55 @@ public class ProController : ControllerBase
     }
 
     /// <summary>
+    /// Retorna estatísticas consolidadas consultando a View vw_estatisticas_prestador.
+    /// </summary>
+    [HttpGet("dashboard/estatisticas")]
+    [ProducesResponseType(typeof(ProEstatisticasResponse), StatusCodes.Status200OK)]
+    public async Task<IActionResult> ObterEstatisticas([FromQuery] int? prestadorId = null)
+    {
+        var id = ObterUsuarioId(prestadorId);
+        var stats = await _proService.ObterEstatisticasAsync(id);
+        if (stats == null)
+            return NotFound(new { mensagem = "Estatísticas do prestador não encontradas." });
+
+        return Ok(stats);
+    }
+
+    /// <summary>
+    /// Lista as solicitações abertas / pendentes para o prestador.
+    /// </summary>
+    [HttpGet("solicitacoes")]
+    [ProducesResponseType(typeof(IEnumerable<ProSolicitacaoPendenteDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> ListarSolicitacoes([FromQuery] int? prestadorId = null)
+    {
+        var id = ObterUsuarioId(prestadorId);
+        var lista = await _proService.ListarSolicitacoesAbertasAsync(id);
+        return Ok(lista);
+    }
+
+    /// <summary>
+    /// Lista os pedidos agendados / agenda do prestador.
+    /// </summary>
+    [HttpGet("agenda")]
+    [ProducesResponseType(typeof(IEnumerable<PedidoResumoResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> ListarAgenda([FromQuery] int? prestadorId = null)
+    {
+        var id = ObterUsuarioId(prestadorId);
+        var agenda = await _proService.ListarAgendaAsync(id);
+        return Ok(agenda);
+    }
+
+    /// <summary>
     /// Alterna a disponibilidade do prestador (Disponível vs Ocupado).
     /// </summary>
     [HttpPatch("disponibilidade")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> AtualizarDisponibilidade([FromBody] AtualizarDisponibilidadeRequest request)
+    public async Task<IActionResult> AtualizarDisponibilidade([FromBody] AtualizarDisponibilidadeRequest request, [FromQuery] int? prestadorId = null)
     {
-        var prestadorId = ObterUsuarioId();
+        var id = ObterUsuarioId(prestadorId);
         try
         {
-            await _proService.AtualizarDisponibilidadeAsync(prestadorId, request.Status);
+            await _proService.AtualizarDisponibilidadeAsync(id, request.Status);
             return Ok(new { mensagem = $"Disponibilidade alterada para {request.Status} com sucesso." });
         }
         catch (ArgumentException ex)
@@ -79,15 +118,16 @@ public class ProController : ControllerBase
     /// Envia proposta comercial formal em resposta à solicitação (Requisito CON_017 / CON_019).
     /// </summary>
     [HttpPost("solicitacoes/{id:int}/proposta")]
+    [HttpPost("solicitacoes/{id:int}/propostas")]
     [ProducesResponseType(typeof(PropostaResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> EnviarProposta(int id, [FromBody] EnviarPropostaRequest request)
+    public async Task<IActionResult> EnviarProposta(int id, [FromBody] EnviarPropostaRequest request, [FromQuery] int? prestadorId = null)
     {
-        var prestadorId = ObterUsuarioId();
+        var pId = ObterUsuarioId(prestadorId);
         try
         {
-            var proposta = await _solicitacaoService.EnviarPropostaAsync(prestadorId, id, request);
+            var proposta = await _solicitacaoService.EnviarPropostaAsync(pId, id, request);
             return CreatedAtAction(nameof(ObterSolicitacao), new { id }, proposta);
         }
         catch (KeyNotFoundException ex)
@@ -106,12 +146,12 @@ public class ProController : ControllerBase
     [HttpPost("solicitacoes/{id:int}/recusar")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> RecusarSolicitacao(int id)
+    public async Task<IActionResult> RecusarSolicitacao(int id, [FromQuery] int? prestadorId = null)
     {
-        var prestadorId = ObterUsuarioId();
+        var pId = ObterUsuarioId(prestadorId);
         try
         {
-            await _solicitacaoService.RecusarSolicitacaoAsync(prestadorId, id);
+            await _solicitacaoService.RecusarSolicitacaoAsync(pId, id);
             return Ok(new { mensagem = $"Solicitação #{id} recusada com sucesso." });
         }
         catch (KeyNotFoundException ex)
@@ -129,10 +169,10 @@ public class ProController : ControllerBase
     /// </summary>
     [HttpGet("portfolio")]
     [ProducesResponseType(typeof(IEnumerable<FotoPortfolioDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> ObterPortfolio()
+    public async Task<IActionResult> ObterPortfolio([FromQuery] int? prestadorId = null)
     {
-        var prestadorId = ObterUsuarioId();
-        var portfolio = await _proService.ObterPortfolioAsync(prestadorId);
+        var pId = ObterUsuarioId(prestadorId);
+        var portfolio = await _proService.ObterPortfolioAsync(pId);
         return Ok(portfolio);
     }
 
@@ -141,10 +181,10 @@ public class ProController : ControllerBase
     /// </summary>
     [HttpPost("portfolio")]
     [ProducesResponseType(typeof(FotoPortfolioDto), StatusCodes.Status201Created)]
-    public async Task<IActionResult> AdicionarFoto([FromBody] CriarItemPortfolioRequest request)
+    public async Task<IActionResult> AdicionarFoto([FromBody] CriarItemPortfolioRequest request, [FromQuery] int? prestadorId = null)
     {
-        var prestadorId = ObterUsuarioId();
-        var item = await _proService.AdicionarItemPortfolioAsync(prestadorId, request);
+        var pId = ObterUsuarioId(prestadorId);
+        var item = await _proService.AdicionarItemPortfolioAsync(pId, request);
         return CreatedAtAction(nameof(ObterPortfolio), item);
     }
 
@@ -153,10 +193,10 @@ public class ProController : ControllerBase
     /// </summary>
     [HttpDelete("portfolio/{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> RemoverFoto(int id)
+    public async Task<IActionResult> RemoverFoto(int id, [FromQuery] int? prestadorId = null)
     {
-        var prestadorId = ObterUsuarioId();
-        await _proService.RemoverItemPortfolioAsync(prestadorId, id);
+        var pId = ObterUsuarioId(prestadorId);
+        await _proService.RemoverItemPortfolioAsync(pId, id);
         return Ok(new { mensagem = "Item de portfólio removido com sucesso." });
     }
 
@@ -165,20 +205,27 @@ public class ProController : ControllerBase
     /// </summary>
     [HttpPut("bio")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> AtualizarBio([FromBody] AtualizarBioRequest request)
+    public async Task<IActionResult> AtualizarBio([FromBody] AtualizarBioRequest request, [FromQuery] int? prestadorId = null)
     {
-        var prestadorId = ObterUsuarioId();
-        await _proService.AtualizarBioAsync(prestadorId, request.Bio);
+        var pId = ObterUsuarioId(prestadorId);
+        await _proService.AtualizarBioAsync(pId, request.Bio);
         return Ok(new { mensagem = "Apresentação profissional atualizada com sucesso." });
     }
 
-    private int ObterUsuarioId()
+    private int ObterUsuarioId(int? fallbackId = null)
     {
-        var claimId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (!int.TryParse(claimId, out var id))
+        var claimId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value;
+        if (int.TryParse(claimId, out var id))
         {
-            throw new UnauthorizedAccessException("Usuário não autenticado.");
+            return id;
         }
-        return id;
+
+        if (fallbackId.HasValue && fallbackId.Value > 0)
+        {
+            return fallbackId.Value;
+        }
+
+        throw new UnauthorizedAccessException("Usuário não autenticado.");
     }
 }

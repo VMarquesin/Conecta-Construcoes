@@ -1,3 +1,5 @@
+using Conecta.Domain.Enums;
+
 namespace Conecta.Domain.Entidades;
 
 public class Usuario
@@ -7,7 +9,6 @@ public class Usuario
     public string Email { get; set; } = string.Empty;
     public string SenhaHash { get; set; } = string.Empty;
     public string Perfil { get; set; } = "CLIENTE"; // PRESTADOR, CLIENTE, ADMIN
-    public string Tipo { get => Perfil; set => Perfil = value; }
     public bool Ativo { get; set; } = true;
     public string? Documento { get; set; }
     public bool Verificado { get; set; } = false;
@@ -15,8 +16,8 @@ public class Usuario
     public decimal MediaAvaliacao { get; set; } = 0.00m;
     public int TotalAvaliacoes { get; set; } = 0;
     public DateTime? TermosAceitosEm { get; set; }
-    public string StatusVerificacao { get; set; } = "COMPLETO";
-    public string StatusConta { get; set; } = "ATIVA";
+    public StatusVerificacao StatusVerificacao { get; set; } = StatusVerificacao.COMPLETO;
+    public StatusConta StatusConta { get; set; } = StatusConta.ATIVA;
     public DateTime? UltimoAcessoEm { get; set; }
     public DateTime CriadoEm { get; set; } = DateTime.UtcNow;
     public DateTime AtualizadoEm { get; set; } = DateTime.UtcNow;

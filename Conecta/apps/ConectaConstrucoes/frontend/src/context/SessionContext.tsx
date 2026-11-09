@@ -15,13 +15,6 @@ export const PERFIL_INFO: Record<Perfil, { label: string; descricao: string; hom
   ADMIN: { label: 'Administrador', descricao: 'Gestão da plataforma', home: '/admin' },
 }
 
-/** Contas de demonstração (substituídas pela autenticação JWT quando o backend for integrado). */
-export const CONTAS_DEMO: UsuarioSessao[] = [
-  { id: 'u-matheus', nome: 'Matheus Oliveira', email: 'matheus@conecta.com', perfis: ['CLIENTE'] },
-  { id: 'u-carlos', nome: 'Carlos Silva', email: 'carlos@conecta.com', perfis: ['CLIENTE', 'PRESTADOR'] },
-  { id: 'u-admin', nome: 'Administrador Conecta', email: 'admin@conecta.com', perfis: ['ADMIN'] },
-]
-
 interface SessionState {
   usuario: UsuarioSessao | null
   perfilAtivo: Perfil | null
@@ -77,6 +70,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const sair = useCallback(() => {
     persistir({ usuario: null, perfilAtivo: null })
+    localStorage.removeItem('conecta.token')
     setMenuContaAberto(false)
   }, [])
 

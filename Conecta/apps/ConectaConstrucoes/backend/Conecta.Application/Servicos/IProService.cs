@@ -5,6 +5,9 @@ namespace Conecta.Application.Servicos;
 public interface IProService
 {
     Task<ProDashboardResponse> ObterDashboardAsync(int prestadorId);
+    Task<ProEstatisticasResponse?> ObterEstatisticasAsync(int prestadorId);
+    Task<IEnumerable<ProSolicitacaoPendenteDto>> ListarSolicitacoesAbertasAsync(int prestadorId);
+    Task<IEnumerable<PedidoResumoResponse>> ListarAgendaAsync(int prestadorId);
     Task AtualizarDisponibilidadeAsync(int prestadorId, string status);
     Task AtualizarBioAsync(int prestadorId, string bio);
     Task<IEnumerable<FotoPortfolioDto>> ObterPortfolioAsync(int prestadorId);

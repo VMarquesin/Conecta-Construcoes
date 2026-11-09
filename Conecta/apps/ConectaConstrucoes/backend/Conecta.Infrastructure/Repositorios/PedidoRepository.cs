@@ -1,4 +1,5 @@
 using Conecta.Domain.Entidades;
+using Conecta.Domain.Enums;
 using Conecta.Domain.Interfaces;
 using Conecta.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -52,8 +53,10 @@ public class PedidoRepository : IPedidoRepository
 
         if (!string.IsNullOrWhiteSpace(status))
         {
-            var statusNormalizado = status.Trim().ToUpper();
-            query = query.Where(p => p.Status.ToUpper() == statusNormalizado);
+            if (Enum.TryParse<StatusPedido>(status.Trim(), true, out var statusPedido))
+            {
+                query = query.Where(p => p.Status == statusPedido);
+            }
         }
 
         return await query
@@ -66,10 +69,13 @@ public class PedidoRepository : IPedidoRepository
         var pedido = await _context.Pedidos.FindAsync(pedidoId);
         if (pedido != null)
         {
-            pedido.Status = novoStatus;
+            if (Enum.TryParse<StatusPedido>(novoStatus.Trim(), true, out var statusEnum))
+            {
+                pedido.Status = statusEnum;
+            }
             pedido.AtualizadoEm = DateTime.UtcNow;
 
-            if (novoStatus == "CONCLUIDO")
+            if (pedido.Status == StatusPedido.CONCLUIDO)
             {
                 pedido.ConcluidoEm = DateTime.UtcNow;
                 pedido.DataConclusao = DateTime.UtcNow;

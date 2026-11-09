@@ -1,7 +1,21 @@
 import { useState, type FormEvent } from 'react'
-import { Navigate, useNavigate } from 'react-router-dom'
-import { CONTAS_DEMO, PERFIL_INFO, useSession } from '../context/SessionContext'
+import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { PERFIL_INFO, useSession, type Perfil, type UsuarioSessao } from '../context/SessionContext'
+import { http, ApiError } from '../core/api/http'
 import './Login.css'
+
+interface LoginApiResponse {
+  token: string
+  expiracao: string
+  usuario: {
+    id: number
+    nome: string
+    email: string
+    tipo?: string
+    roles: string[]
+  }
+  permissoes: string[]
+}
 
 export default function Login() {
   const { usuario, perfilAtivo, entrar } = useSession()
@@ -9,20 +23,63 @@ export default function Login() {
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
   const [erro, setErro] = useState('')
+  const [carregando, setCarregando] = useState(false)
 
   if (usuario && perfilAtivo) return <Navigate to={PERFIL_INFO[perfilAtivo].home} replace />
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    // Autenticação simulada: será substituída pelo POST /auth/login do backend.
-    const conta = CONTAS_DEMO.find((c) => c.email.toLowerCase() === email.trim().toLowerCase())
-    if (!conta || !senha) {
-      setErro('E-mail ou senha inválidos.')
+    if (!email.trim() || !senha) {
+      setErro('Informe o e-mail e a senha.')
       return
     }
-    const perfil = conta.perfis[0]
-    entrar(conta, perfil)
-    navigate(PERFIL_INFO[perfil].home, { replace: true })
+
+    try {
+      setCarregando(true)
+      setErro('')
+
+      const res = await http<LoginApiResponse>('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email: email.trim(), senha }),
+      })
+
+      localStorage.setItem('conecta.token', res.token)
+
+      const roles = res.usuario.roles || []
+      const perfis: Perfil[] = []
+      if (roles.includes('ADMIN_MASTER') || roles.includes('ADMIN')) perfis.push('ADMIN')
+      if (roles.includes('PRESTADOR')) perfis.push('PRESTADOR')
+      if (roles.includes('CLIENTE')) perfis.push('CLIENTE')
+
+      if (perfis.length === 0) {
+        perfis.push('CLIENTE')
+      }
+
+      const perfilPadrao = perfis[0]
+
+      const usuarioSessao: UsuarioSessao = {
+        id: String(res.usuario.id),
+        nome: res.usuario.nome,
+        email: res.usuario.email,
+        perfis,
+      }
+
+      entrar(usuarioSessao, perfilPadrao)
+      navigate(PERFIL_INFO[perfilPadrao].home, { replace: true })
+    } catch (err) {
+      if (err instanceof ApiError) {
+        try {
+          const parsed = JSON.parse(err.message)
+          setErro(parsed.mensagem || 'E-mail ou senha inválidos.')
+        } catch {
+          setErro(err.message || 'E-mail ou senha inválidos.')
+        }
+      } else {
+        setErro('Falha na comunicação com o servidor. Verifique se o backend está ativo.')
+      }
+    } finally {
+      setCarregando(false)
+    }
   }
 
   return (
@@ -61,7 +118,16 @@ export default function Login() {
 
           {erro && <div className="login-error" role="alert">{erro}</div>}
 
-          <button type="submit" className="login-btn login-submit">Entrar</button>
+          <button type="submit" className="login-btn login-submit" disabled={carregando}>
+            {carregando ? 'Entrando...' : 'Entrar'}
+          </button>
+
+          <div style={{ marginTop: '1.25rem', textAlign: 'center', fontSize: '0.875rem', color: '#64748b' }}>
+            Ainda não tem conta?{' '}
+            <Link to="/cadastro" style={{ color: '#2563eb', fontWeight: 600, textDecoration: 'none' }}>
+              Cadastre-se aqui
+            </Link>
+          </div>
         </form>
       </main>
     </div>

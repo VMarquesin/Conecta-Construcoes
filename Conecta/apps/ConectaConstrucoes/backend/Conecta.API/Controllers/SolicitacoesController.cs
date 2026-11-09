@@ -23,21 +23,26 @@ public class SolicitacoesController : ControllerBase
     /// Registra uma nova solicitação de orçamento (Requisito CON_016 - Status inicial: ABERTA).
     /// </summary>
     [HttpPost]
-    [Authorize]
     [ProducesResponseType(typeof(SolicitacaoResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> Criar([FromBody] CriarSolicitacaoRequest request)
+    public async Task<IActionResult> Criar([FromBody] CriarSolicitacaoRequest request, [FromQuery] int? clienteId = null)
     {
         var claimId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (!int.TryParse(claimId, out var clienteId))
+        int idFinal = 0;
+        if (int.TryParse(claimId, out var parsedId))
+            idFinal = parsedId;
+        else if (clienteId.HasValue && clienteId.Value > 0)
+            idFinal = clienteId.Value;
+
+        if (idFinal == 0)
         {
             return Unauthorized(new { mensagem = "Usuário não autenticado." });
         }
 
         try
         {
-            var resultado = await _solicitacaoService.CriarAsync(clienteId, request);
+            var resultado = await _solicitacaoService.CriarAsync(idFinal, request);
             return CreatedAtAction(nameof(ObterPorId), new { id = resultado.Id }, resultado);
         }
         catch (KeyNotFoundException ex)
@@ -64,5 +69,81 @@ public class SolicitacoesController : ControllerBase
             return NotFound(new { mensagem = $"Solicitação #{id} não encontrada." });
 
         return Ok(s);
+    }
+
+    /// <summary>
+    /// Envia uma proposta formal para uma solicitação de orçamento.
+    /// </summary>
+    [HttpPost("{id:int}/propostas")]
+    [HttpPost("{id:int}/proposta")]
+    [Authorize]
+    [ProducesResponseType(typeof(PropostaResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> EnviarProposta(int id, [FromBody] EnviarPropostaRequest request, [FromQuery] int? prestadorId = null)
+    {
+        var claimId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value;
+        int idFinal = 0;
+        if (int.TryParse(claimId, out var parsedId))
+            idFinal = parsedId;
+        else if (prestadorId.HasValue && prestadorId.Value > 0)
+            idFinal = prestadorId.Value;
+
+        if (idFinal == 0)
+        {
+            return Unauthorized(new { mensagem = "Prestador não autenticado." });
+        }
+
+        try
+        {
+            var proposta = await _solicitacaoService.EnviarPropostaAsync(idFinal, id, request);
+            return CreatedAtAction(nameof(ObterPorId), new { id }, proposta);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { mensagem = ex.Message });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { mensagem = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Recusa uma solicitação de serviço.
+    /// </summary>
+    [HttpPost("{id:int}/recusar")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> Recusar(int id, [FromQuery] int? prestadorId = null)
+    {
+        var claimId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value;
+        int idFinal = 0;
+        if (int.TryParse(claimId, out var parsedId))
+            idFinal = parsedId;
+        else if (prestadorId.HasValue && prestadorId.Value > 0)
+            idFinal = prestadorId.Value;
+
+        if (idFinal == 0)
+        {
+            return Unauthorized(new { mensagem = "Prestador não autenticado." });
+        }
+
+        try
+        {
+            await _solicitacaoService.RecusarSolicitacaoAsync(idFinal, id);
+            return Ok(new { mensagem = $"Solicitação #{id} recusada com sucesso." });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { mensagem = ex.Message });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { mensagem = ex.Message });
+        }
     }
 }

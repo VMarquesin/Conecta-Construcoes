@@ -1,23 +1,52 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useChat } from '../context/ChatContext'
 import HeaderChatButton from '../components/chat/HeaderChatButton'
 import AccountTrigger from '../components/session/AccountTrigger'
+import {
+  solicitacaoService,
+  type PrestadorPerfilDetalhadoResponse,
+} from '../features/cliente/services/solicitacaoService'
 import './PrestadorPerfil.css'
-
-import carlosAvatar from '../assets/avatars/carlos.jpg'
-import capaCarlos from '../assets/portfolio/capa_carlos.jpg'
-import pendentesImg from '../assets/portfolio/pendentes.jpg'
-import quadroImg from '../assets/portfolio/quadro.jpg'
-import ledImg from '../assets/portfolio/led.jpg'
-import automacaoImg from '../assets/portfolio/automacao.jpg'
 
 export default function PrestadorPerfil() {
   const navigate = useNavigate()
   const { abrirChat } = useChat()
+  const { id } = useParams<{ id?: string }>()
+  const prestadorId = id && !isNaN(Number(id)) ? Number(id) : 1
+
+  const [prestador, setPrestador] = useState<PrestadorPerfilDetalhadoResponse | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [erro, setErro] = useState<string | null>(null)
+
   const [isFavorited, setIsFavorited] = useState(false)
   const [copiado, setCopiado] = useState(false)
   const [modalOrcamentoAberto, setModalOrcamentoAberto] = useState(false)
+
+  // Form states para solicitação
+  const [tituloSolicitacao, setTituloSolicitacao] = useState('Solicitação de Orçamento')
+  const [descricaoSolicitacao, setDescricaoSolicitacao] = useState('')
+  const [enderecoSolicitacao, setEnderecoSolicitacao] = useState('')
+  const [enviandoSolicitacao, setEnviandoSolicitacao] = useState(false)
+  const [erroSolicitacao, setErroSolicitacao] = useState<string | null>(null)
+
+  useEffect(() => {
+    setLoading(true)
+    setErro(null)
+    solicitacaoService
+      .obterPerfilPrestador(prestadorId)
+      .then((data) => {
+        setPrestador(data)
+        setIsFavorited(data.isFavorited)
+      })
+      .catch((err) => {
+        console.error('Erro ao carregar perfil do prestador:', err)
+        setErro('Não foi possível carregar os dados do prestador.')
+      })
+      .finally(() => {
+        setLoading(false)
+      })
+  }, [prestadorId])
 
   const handleShare = () => {
     navigator.clipboard?.writeText(window.location.href)
@@ -25,71 +54,51 @@ export default function PrestadorPerfil() {
     setTimeout(() => setCopiado(false), 2000)
   }
 
-  const checklistItens = [
-    'Quadro de Luz',
-    'Fiação Completa',
-    'Instalação de Chuveiro',
-    'Projetos de LED',
-    'Disjuntores DR',
-    'Laudo Técnico',
-  ]
+  const handleToggleFavorito = async () => {
+    try {
+      const res = await solicitacaoService.alternarFavorito(prestadorId)
+      setIsFavorited(res.favoritado)
+    } catch {
+      setIsFavorited((prev) => !prev)
+    }
+  }
 
-  const portfolioItens = [
-    {
-      id: 1,
-      titulo: 'Pendentes Modernos',
-      subtitulo: 'Iluminação de sala',
-      imagem: pendentesImg,
-    },
-    {
-      id: 2,
-      titulo: 'Quadro de Disjuntores',
-      subtitulo: 'Norma NBR-5410',
-      imagem: quadroImg,
-    },
-    {
-      id: 3,
-      titulo: 'Fita LED em Sanca',
-      subtitulo: 'Luz indireta e suave',
-      imagem: ledImg,
-    },
-    {
-      id: 4,
-      titulo: 'Automação Residencial',
-      subtitulo: 'Interruptores touch',
-      imagem: automacaoImg,
-    },
-  ]
+  const handleEnviarSolicitacao = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!descricaoSolicitacao.trim()) {
+      setErroSolicitacao('Por favor, informe a descrição do serviço necessário.')
+      return
+    }
 
-  const avaliacoes = [
-    {
-      id: 1,
-      iniciais: 'ML',
-      avatarClass: 'avatar-blue',
-      nome: 'Mariana Lopes',
-      data: 'há 3 dias',
-      comentario:
-        'Serviço impecável! O Carlos trocou toda a fiação da minha cozinha e instalou as luminárias com muito cuidado e rapidez. Super pontual.',
-    },
-    {
-      id: 2,
-      iniciais: 'RA',
-      avatarClass: 'avatar-amber',
-      nome: 'Roberto Almeida',
-      data: 'há 1 semana',
-      comentario:
-        'Excelente profissional. Identificou um problema no quadro que ninguém conseguia resolver. Preço justo e muito educado.',
-    },
-    {
-      id: 3,
-      iniciais: 'FC',
-      avatarClass: 'avatar-coral',
-      nome: 'Fernanda Castro',
-      data: 'há 2 semanas',
-      comentario:
-        'Muito caprichoso na instalação das fitas LED da sala. Recomendo com certeza!',
-    },
-  ]
+    setEnviandoSolicitacao(true)
+    setErroSolicitacao(null)
+
+    try {
+      await solicitacaoService.criarSolicitacao({
+        prestadorId,
+        titulo: tituloSolicitacao.trim() || 'Solicitação de Orçamento',
+        descricao: descricaoSolicitacao.trim(),
+        enderecoAtendimento: enderecoSolicitacao.trim() || undefined,
+      })
+      alert('Solicitação de orçamento enviada com sucesso! O prestador responderá em breve.')
+      setModalOrcamentoAberto(false)
+      navigate('/pedidos')
+    } catch (err: any) {
+      console.error('Erro ao enviar solicitação:', err)
+      setErroSolicitacao(err.message || 'Erro ao enviar a solicitação.')
+    } finally {
+      setEnviandoSolicitacao(false)
+    }
+  }
+
+  const checklistItens = prestador?.checklist || []
+
+  const portfolioItens = prestador?.portfolio || []
+
+  const avaliacoes = (prestador?.avaliacoes || []).map((av, idx) => ({
+    ...av,
+    avatarClass: idx % 3 === 0 ? 'avatar-blue' : idx % 3 === 1 ? 'avatar-amber' : 'avatar-coral',
+  }))
 
   return (
     <div className="perfil-viewport">
@@ -141,209 +150,261 @@ export default function PrestadorPerfil() {
           </div>
         )}
 
-        {/* Layout do Perfil (Grid de 2 Colunas no Desktop) */}
-        <main className="perfil-main-layout">
-          {/* Coluna Esquerda: Vitrine, Portfólio e Avaliações */}
-          <div className="perfil-left-col">
-            {/* Imagem de Capa com Botões Flutuantes e Avatar Sobreposto */}
-            <div className="cover-wrapper">
-              <img src={capaCarlos} alt="Capa do perfil" className="cover-image" />
+        {loading ? (
+          <div style={{ padding: '80px 20px', textAlign: 'center', color: '#64748b' }}>
+            <p>Carregando perfil do profissional...</p>
+          </div>
+        ) : erro ? (
+          <div style={{ padding: '80px 20px', textAlign: 'center', color: '#ef4444' }}>
+            <h3>{erro}</h3>
+            <button
+              onClick={() => navigate('/busca')}
+              style={{ marginTop: '16px', padding: '10px 20px', borderRadius: '10px', background: '#0056d6', color: '#fff', border: 'none', cursor: 'pointer' }}
+            >
+              Voltar para a busca
+            </button>
+          </div>
+        ) : (
+          /* Layout do Perfil (Grid de 2 Colunas no Desktop) */
+          <main className="perfil-main-layout">
+            {/* Coluna Esquerda: Vitrine, Portfólio e Avaliações */}
+            <div className="perfil-left-col">
+              {/* Imagem de Capa com Botões Flutuantes e Avatar Sobreposto */}
+              <div className="cover-wrapper">
+                {prestador?.capa ? (
+                  <img src={prestador.capa} alt="Capa do perfil" className="cover-image" />
+                ) : (
+                  <div
+                    className="cover-image"
+                    style={{
+                      background: 'linear-gradient(135deg, #1e3a8a 0%, #0056D6 50%, #3b82f6 100%)',
+                      width: '100%',
+                      height: '100%',
+                    }}
+                  />
+                )}
 
-              <div className="cover-dots">
-                <span className="cover-dot active" />
-                <span className="cover-dot" />
-              </div>
+                <div className="cover-dots">
+                  <span className="cover-dot active" />
+                  <span className="cover-dot" />
+                </div>
 
-              <div className="cover-overlay-actions">
-                <button
-                  className="cover-btn"
-                  onClick={() => navigate(-1)}
-                  title="Voltar"
-                  aria-label="Voltar"
-                >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="19" y1="12" x2="5" y2="12" />
-                    <polyline points="12 19 5 12 12 5" />
-                  </svg>
-                </button>
-
-                <div className="cover-right-btns">
+                <div className="cover-overlay-actions">
                   <button
                     className="cover-btn"
-                    onClick={handleShare}
-                    title="Compartilhar Perfil"
-                    aria-label="Compartilhar"
+                    onClick={() => navigate(-1)}
+                    title="Voltar"
+                    aria-label="Voltar"
                   >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="18" cy="5" r="3" />
-                      <circle cx="6" cy="12" r="3" />
-                      <circle cx="18" cy="19" r="3" />
-                      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-                      <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="19" y1="12" x2="5" y2="12" />
+                      <polyline points="12 19 5 12 12 5" />
                     </svg>
                   </button>
 
-                  <button
-                    className={`cover-btn ${isFavorited ? 'favorited' : ''}`}
-                    onClick={() => setIsFavorited(!isFavorited)}
-                    title={isFavorited ? 'Remover dos favoritos' : 'Favoritar'}
-                    aria-label="Favoritar"
-                  >
-                    <svg width="19" height="19" viewBox="0 0 24 24" fill={isFavorited ? '#ef4444' : 'none'} stroke={isFavorited ? '#ef4444' : 'currentColor'} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                    </svg>
-                  </button>
+                  <div className="cover-right-btns">
+                    <button
+                      className="cover-btn"
+                      onClick={handleShare}
+                      title="Compartilhar Perfil"
+                      aria-label="Compartilhar"
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="18" cy="5" r="3" />
+                        <circle cx="6" cy="12" r="3" />
+                        <circle cx="18" cy="19" r="3" />
+                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                      </svg>
+                    </button>
+
+                    <button
+                      className={`cover-btn ${isFavorited ? 'favorited' : ''}`}
+                      onClick={handleToggleFavorito}
+                      title={isFavorited ? 'Remover dos favoritos' : 'Favoritar'}
+                      aria-label="Favoritar"
+                    >
+                      <svg width="19" height="19" viewBox="0 0 24 24" fill={isFavorited ? '#ef4444' : 'none'} stroke={isFavorited ? '#ef4444' : 'currentColor'} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Avatar e Selo de Verificado Sobreposto */}
+                <div className="provider-identity-card">
+                  <div className="provider-avatar-circle">
+                    {prestador?.avatar ? (
+                      <img src={prestador.avatar} alt={prestador?.nome || 'Profissional'} className="provider-avatar-img" />
+                    ) : (
+                      <div
+                        className="provider-avatar-img"
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          background: '#0056D6',
+                          color: '#ffffff',
+                        }}
+                      >
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                          <circle cx="12" cy="7" r="4" />
+                        </svg>
+                      </div>
+                    )}
+                    <span className="provider-verified-check">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              {/* Avatar e Selo de Verificado Sobreposto */}
-              <div className="provider-identity-card">
-                <div className="provider-avatar-circle">
-                  <img src={carlosAvatar} alt="Carlos Silva" className="provider-avatar-img" />
-                  <span className="provider-verified-check">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Identidade do Prestador */}
-            <div className="provider-header-info">
-              <span className="pill-destaque-regiao">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
-                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                </svg>
-                Destaque na Região
-              </span>
-
-              <h1 className="provider-fullname">Carlos Silva</h1>
-              <p className="provider-specialty-sub">Eletricista Residencial & Predial</p>
-
-              <div className="provider-distance-row">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
-                </svg>
-                <span>a 1.8 km de você • Centro e arredores</span>
-              </div>
-            </div>
-
-            {/* Card Investimento Inicial (visível em mobile e desktop) */}
-            <div className="investment-card">
-              <div className="investment-left">
-                <span className="investment-tag">Investimento Inicial</span>
-                <span className="investment-val">
-                  A partir de R$ 90<small>/hora</small>
-                </span>
-              </div>
-
-              <div className="investment-free-quote">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="m9 12 2 2 4-4" />
-                </svg>
-                <span>Orçamento<br />grátis</span>
-              </div>
-            </div>
-
-            {/* Grid 2x2 de Métricas / Estatísticas */}
-            <div className="stats-2x2-grid">
-              <div className="stat-metric-card">
-                <div className="stat-icon-circ star">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              {/* Identidade do Prestador */}
+              <div className="provider-header-info">
+                <span className="pill-destaque-regiao">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
                     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                   </svg>
+                  {prestador?.seloSuper ? 'Superprestador' : 'Destaque na Região'}
+                </span>
+
+                <h1 className="provider-fullname">{prestador?.nome || 'Profissional'}</h1>
+                <p className="provider-specialty-sub">{prestador?.profissao || 'Prestador de Serviços'}</p>
+
+                <div className="provider-distance-row">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                  </svg>
+                  <span>{prestador?.cidade ? `${prestador.cidade}, ${prestador.estado}` : 'São Paulo, SP'}</span>
                 </div>
-                <div className="stat-text-col">
-                  <span className="stat-main-number">
-                    4.9 <small>(128)</small>
+              </div>
+
+              {/* Card Investimento Inicial (visível em mobile e desktop) */}
+              <div className="investment-card">
+                <div className="investment-left">
+                  <span className="investment-tag">Investimento Inicial</span>
+                  <span className="investment-val">
+                    A partir de R$ {prestador?.valorHora ?? 90}<small>/hora</small>
                   </span>
-                  <span className="stat-sub-label">Avaliações</span>
                 </div>
-              </div>
 
-              <div className="stat-metric-card">
-                <div className="stat-icon-circ shield">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z" />
+                <div className="investment-free-quote">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="m9 12 2 2 4-4" />
                   </svg>
-                </div>
-                <div className="stat-text-col">
-                  <span className="stat-main-number">8 anos</span>
-                  <span className="stat-sub-label">Experiência</span>
+                  <span>Orçamento<br />grátis</span>
                 </div>
               </div>
 
-              <div className="stat-metric-card">
-                <div className="stat-icon-circ lightning">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-                  </svg>
-                </div>
-                <div className="stat-text-col">
-                  <span className="stat-main-number">&lt; 15 min</span>
-                  <span className="stat-sub-label">Resposta ágil</span>
-                </div>
-              </div>
-
-              <div className="stat-metric-card">
-                <div className="stat-icon-circ compass">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <polygon points="3 11 22 2 13 21 11 13 3 11" />
-                  </svg>
-                </div>
-                <div className="stat-text-col">
-                  <span className="stat-main-number">Até 15 km</span>
-                  <span className="stat-sub-label">Raio de serviço</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Sobre o Profissional */}
-            <section className="section-block">
-              <h2 className="section-block-title">Sobre o profissional</h2>
-              <p className="section-block-desc">
-                Especialista em instalações elétricas seguras, quadros de distribuição, projetos
-                luminotécnicos e padrões de entrada com certificação NR-10. Atendimento pontual, limpo e
-                100% transparente.
-              </p>
-
-              <div className="checklist-pills-wrap">
-                {checklistItens.map((item, idx) => (
-                  <span key={idx} className="checklist-pill">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="10" />
-                      <polyline points="9 12 11 14 15 10" />
+              {/* Grid 2x2 de Métricas / Estatísticas */}
+              <div className="stats-2x2-grid">
+                <div className="stat-metric-card">
+                  <div className="stat-icon-circ star">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                     </svg>
-                    <span>{item}</span>
-                  </span>
-                ))}
+                  </div>
+                  <div className="stat-text-col">
+                    <span className="stat-main-number">
+                      {(prestador?.avaliacao ?? 4.9).toFixed(1)} <small>({prestador?.numAvaliacoes ?? 128})</small>
+                    </span>
+                    <span className="stat-sub-label">Avaliações</span>
+                  </div>
+                </div>
+
+                <div className="stat-metric-card">
+                  <div className="stat-icon-circ shield">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z" />
+                    </svg>
+                  </div>
+                  <div className="stat-text-col">
+                    <span className="stat-main-number">{prestador?.experienciaAnos ?? 8} anos</span>
+                    <span className="stat-sub-label">Experiência</span>
+                  </div>
+                </div>
+
+                <div className="stat-metric-card">
+                  <div className="stat-icon-circ lightning">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                    </svg>
+                  </div>
+                  <div className="stat-text-col">
+                    <span className="stat-main-number">{prestador?.tempoResposta || '< 15 min'}</span>
+                    <span className="stat-sub-label">Resposta ágil</span>
+                  </div>
+                </div>
+
+                <div className="stat-metric-card">
+                  <div className="stat-icon-circ compass">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <polygon points="3 11 22 2 13 21 11 13 3 11" />
+                    </svg>
+                  </div>
+                  <div className="stat-text-col">
+                    <span className="stat-main-number">Até 15 km</span>
+                    <span className="stat-sub-label">Raio de serviço</span>
+                  </div>
+                </div>
               </div>
+
+              {/* Sobre o Profissional */}
+              <section className="section-block">
+                <h2 className="section-block-title">Sobre o profissional</h2>
+                <p className="section-block-desc">
+                  {prestador?.bio || 'Especialista em instalações elétricas seguras, quadros de distribuição, projetos luminotécnicos e padrões de entrada com certificação NR-10. Atendimento pontual, limpo e 100% transparente.'}
+                </p>
+
+              {checklistItens.length > 0 && (
+                <div className="checklist-pills-wrap">
+                  {checklistItens.map((item, idx) => (
+                    <span key={idx} className="checklist-pill">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="9 12 11 14 15 10" />
+                      </svg>
+                      <span>{item}</span>
+                    </span>
+                  ))}
+                </div>
+              )}
             </section>
 
             {/* Trabalhos Realizados (Vitrine de Fotos) */}
             <section className="section-block">
               <div className="portfolio-header-row">
                 <h2 className="section-block-title">Trabalhos Realizados</h2>
-                <a href="#galeria" className="portfolio-link-count">
-                  18 fotos
-                </a>
+                {portfolioItens.length > 0 && (
+                  <span className="portfolio-link-count">
+                    {portfolioItens.length} fotos
+                  </span>
+                )}
               </div>
 
-              <div className="portfolio-grid-2x2">
-                {portfolioItens.map((trab) => (
-                  <article key={trab.id} className="portfolio-card-item">
-                    <div className="portfolio-img-box">
-                      <img src={trab.imagem} alt={trab.titulo} className="portfolio-img" />
-                    </div>
-                    <div className="portfolio-caption">
-                      <h4 className="portfolio-caption-title">{trab.titulo}</h4>
-                      <p className="portfolio-caption-sub">{trab.subtitulo}</p>
-                    </div>
-                  </article>
-                ))}
-              </div>
+              {portfolioItens.length === 0 ? (
+                <div style={{ padding: '24px', background: '#f8fafc', borderRadius: '12px', textAlign: 'center', color: '#64748b', fontSize: '14px' }}>
+                  Nenhum projeto cadastrado no portfólio até o momento.
+                </div>
+              ) : (
+                <div className="portfolio-grid-2x2">
+                  {portfolioItens.map((trab) => (
+                    <article key={trab.id} className="portfolio-card-item">
+                      <div className="portfolio-img-box">
+                        <img src={trab.imagem} alt={trab.titulo} className="portfolio-img" />
+                      </div>
+                      <div className="portfolio-caption">
+                        <h4 className="portfolio-caption-title">{trab.titulo}</h4>
+                        <p className="portfolio-caption-sub">{trab.subtitulo}</p>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
             </section>
 
             {/* Banner Conecta Protege */}
@@ -375,30 +436,36 @@ export default function PrestadorPerfil() {
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                   </svg>
-                  <span>4.9 (128)</span>
+                  <span>{prestador?.avaliacao ? Number(prestador.avaliacao).toFixed(1) : '5.0'} ({prestador?.numAvaliacoes ?? avaliacoes.length})</span>
                 </span>
               </div>
 
-              <div className="reviews-cards-wrap">
-                {avaliacoes.map((rev) => (
-                  <article key={rev.id} className="review-item-card">
-                    <div className="review-user-top">
-                      <div className="review-user-left">
-                        <div className={`review-initials-avatar ${rev.avatarClass}`}>
-                          {rev.iniciais}
+              {avaliacoes.length === 0 ? (
+                <div style={{ padding: '24px', background: '#f8fafc', borderRadius: '12px', textAlign: 'center', color: '#64748b', fontSize: '14px' }}>
+                  Nenhuma avaliação registrada ainda.
+                </div>
+              ) : (
+                <div className="reviews-cards-wrap">
+                  {avaliacoes.map((rev) => (
+                    <article key={rev.id} className="review-item-card">
+                      <div className="review-user-top">
+                        <div className="review-user-left">
+                          <div className={`review-initials-avatar ${rev.avatarClass}`}>
+                            {rev.iniciais}
+                          </div>
+                          <div className="review-user-names">
+                            <span className="review-name">{rev.nome}</span>
+                            <span className="review-date">{rev.data}</span>
+                          </div>
                         </div>
-                        <div className="review-user-names">
-                          <span className="review-name">{rev.nome}</span>
-                          <span className="review-date">{rev.data}</span>
-                        </div>
+                        <span className="review-stars">★★★★★</span>
                       </div>
-                      <span className="review-stars">★★★★★</span>
-                    </div>
 
-                    <p className="review-comment">"{rev.comentario}"</p>
-                  </article>
-                ))}
-              </div>
+                      <p className="review-comment">"{rev.comentario}"</p>
+                    </article>
+                  ))}
+                </div>
+              )}
             </section>
           </div>
 
@@ -448,7 +515,7 @@ export default function PrestadorPerfil() {
               <button
                 className="cta-chat-btn"
                 style={{ width: '100%', height: '48px', borderRadius: '14px', gap: '8px' }}
-                onClick={() => abrirChat('carlos-silva')}
+                onClick={() => abrirChat(prestador?.id || prestadorId)}
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
@@ -458,14 +525,15 @@ export default function PrestadorPerfil() {
             </div>
           </aside>
         </main>
+        )}
 
-        {/* Modal Simulado de Solicitar Orçamento */}
+        {/* Modal de Solicitação de Orçamento Rápido */}
         {modalOrcamentoAberto && (
           <div
             style={{
               position: 'fixed',
               inset: 0,
-              backgroundColor: 'rgba(15, 23, 42, 0.6)',
+              backgroundColor: 'rgba(15, 23, 42, 0.65)',
               backdropFilter: 'blur(4px)',
               display: 'flex',
               alignItems: 'center',
@@ -474,7 +542,8 @@ export default function PrestadorPerfil() {
               padding: '20px',
             }}
           >
-            <div
+            <form
+              onSubmit={handleEnviarSolicitacao}
               style={{
                 background: '#ffffff',
                 borderRadius: '24px',
@@ -484,12 +553,13 @@ export default function PrestadorPerfil() {
                 boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '16px',
+                gap: '14px',
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h3 style={{ margin: 0, fontSize: '20px', fontWeight: 800 }}>Solicitar Orçamento</h3>
                 <button
+                  type="button"
                   onClick={() => setModalOrcamentoAberto(false)}
                   style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px' }}
                 >
@@ -498,26 +568,83 @@ export default function PrestadorPerfil() {
               </div>
 
               <p style={{ margin: 0, color: '#475569', fontSize: '14px' }}>
-                Envie os detalhes do seu pedido para <strong>Carlos Silva</strong>. O prestador responderá
-                em média em menos de 15 minutos com uma proposta personalizada.
+                Envie os detalhes do seu pedido para <strong>{prestador?.nome || 'o profissional'}</strong>. O prestador responderá com uma proposta personalizada.
               </p>
 
-              <textarea
-                rows={4}
-                placeholder="Descreva o que você precisa (ex: troca de disjuntores, instalação de luminária, etc.)..."
-                style={{
-                  width: '100%',
-                  borderRadius: '12px',
-                  border: '1.5px solid #cbd5e1',
-                  padding: '12px',
-                  fontSize: '14px',
-                  fontFamily: 'inherit',
-                  outline: 'none',
-                }}
-              />
+              {erroSolicitacao && (
+                <div style={{ padding: '10px 14px', borderRadius: '8px', background: '#fee2e2', color: '#b91c1c', fontSize: '13px' }}>
+                  {erroSolicitacao}
+                </div>
+              )}
+
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                  Título do Serviço
+                </label>
+                <input
+                  type="text"
+                  value={tituloSolicitacao}
+                  onChange={(e) => setTituloSolicitacao(e.target.value)}
+                  placeholder="Ex: Troca de disjuntor e fiação"
+                  style={{
+                    width: '100%',
+                    borderRadius: '10px',
+                    border: '1.5px solid #cbd5e1',
+                    padding: '10px 12px',
+                    fontSize: '14px',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                  Descrição da Necessidade *
+                </label>
+                <textarea
+                  rows={4}
+                  required
+                  value={descricaoSolicitacao}
+                  onChange={(e) => setDescricaoSolicitacao(e.target.value)}
+                  placeholder="Descreva o que você precisa em detalhes (problemas, materiais disponíveis, etc.)..."
+                  style={{
+                    width: '100%',
+                    borderRadius: '12px',
+                    border: '1.5px solid #cbd5e1',
+                    padding: '12px',
+                    fontSize: '14px',
+                    fontFamily: 'inherit',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                  Endereço ou Região do Atendimento
+                </label>
+                <input
+                  type="text"
+                  value={enderecoSolicitacao}
+                  onChange={(e) => setEnderecoSolicitacao(e.target.value)}
+                  placeholder="Ex: Av. Paulista, 1500, Apto 42"
+                  style={{
+                    width: '100%',
+                    borderRadius: '10px',
+                    border: '1.5px solid #cbd5e1',
+                    padding: '10px 12px',
+                    fontSize: '14px',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </div>
 
               <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '8px' }}>
                 <button
+                  type="button"
                   onClick={() => setModalOrcamentoAberto(false)}
                   style={{
                     padding: '10px 18px',
@@ -531,24 +658,22 @@ export default function PrestadorPerfil() {
                   Cancelar
                 </button>
                 <button
-                  onClick={() => {
-                    setModalOrcamentoAberto(false)
-                    navigate('/pedidos')
-                  }}
+                  type="submit"
+                  disabled={enviandoSolicitacao}
                   style={{
                     padding: '10px 22px',
                     borderRadius: '10px',
                     border: 'none',
-                    background: '#0056d6',
+                    background: enviandoSolicitacao ? '#94a3b8' : '#0056d6',
                     color: '#ffffff',
                     fontWeight: 700,
-                    cursor: 'pointer',
+                    cursor: enviandoSolicitacao ? 'not-allowed' : 'pointer',
                   }}
                 >
-                  Enviar Pedido
+                  {enviandoSolicitacao ? 'Enviando...' : 'Enviar Pedido'}
                 </button>
               </div>
-            </div>
+            </form>
           </div>
         )}
 
@@ -557,14 +682,14 @@ export default function PrestadorPerfil() {
           <div className="cta-bar-inner">
             <div className="cta-price-col">
               <span className="cta-price-hint">Estimativa</span>
-              <span className="cta-price-amount">R$ 90<small style={{ fontSize: '12px', color: '#64748b' }}>/hora</small></span>
+              <span className="cta-price-amount">R$ {prestador?.valorHora ?? 90}<small style={{ fontSize: '12px', color: '#64748b' }}>/hora</small></span>
             </div>
 
             <div className="cta-buttons-row">
               <button
                 className="cta-chat-btn"
                 title="Conversar"
-                onClick={() => abrirChat('carlos-silva')}
+                onClick={() => abrirChat(prestador?.id || prestadorId)}
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
