@@ -1,4 +1,5 @@
 using Conecta.Application.DTOs;
+using Conecta.Domain.Enums;
 using Conecta.Domain.Interfaces;
 
 namespace Conecta.Application.Servicos;
@@ -6,10 +7,17 @@ namespace Conecta.Application.Servicos;
 public class PrestadorService : IPrestadorService
 {
     private readonly IPrestadorRepository _prestadorRepository;
+    private readonly IPedidoRepository _pedidoRepository;
+    private readonly IAvaliacaoRepository _avaliacaoRepository;
 
-    public PrestadorService(IPrestadorRepository prestadorRepository)
+    public PrestadorService(
+        IPrestadorRepository prestadorRepository,
+        IPedidoRepository pedidoRepository,
+        IAvaliacaoRepository avaliacaoRepository)
     {
         _prestadorRepository = prestadorRepository;
+        _pedidoRepository = pedidoRepository;
+        _avaliacaoRepository = avaliacaoRepository;
     }
 
     public async Task<PrestadorBuscaPaginadaResponse> BuscarAsync(FiltroBuscaPrestadorRequest request)
@@ -100,6 +108,23 @@ public class PrestadorService : IPrestadorService
         var isFavorited = clienteIdLogado.HasValue &&
                           await _prestadorRepository.IsFavoritadoAsync(clienteIdLogado.Value, prestadorId);
 
+        // Regra de Negócio: podeAvaliar se o cliente tiver pelo menos 1 pedido concluído e ainda não avaliou
+        bool podeAvaliar = false;
+        if (clienteIdLogado.HasValue && clienteIdLogado.Value > 0)
+        {
+            var pedidosCliente = await _pedidoRepository.ListarPorUsuarioAsync(clienteIdLogado.Value, "CONCLUIDO");
+            var temPedidoConcluido = pedidosCliente.Any(p =>
+                p.ClienteId == clienteIdLogado.Value &&
+                p.PrestadorId == prestadorId &&
+                p.Status == StatusPedido.CONCLUIDO);
+
+            if (temPedidoConcluido)
+            {
+                var jaAvaliou = await _avaliacaoRepository.ObterPorClienteEPrestadorAsync(clienteIdLogado.Value, prestadorId);
+                podeAvaliar = (jaAvaliou == null);
+            }
+        }
+
         var portfolioDtos = portfolios.Select(p => new PortfolioItemDto(
             p.Id,
             p.Titulo ?? "Serviço Realizado",
@@ -112,9 +137,11 @@ public class PrestadorService : IPrestadorService
             var nome = a.Cliente?.Usuario?.Nome ?? "Cliente";
             return new AvaliacaoItemDto(
                 a.Id,
+                a.ClienteId,
                 nome,
                 a.Nota,
                 FormatarTempoRelativo(a.DataCriacao),
+                a.DataCriacao,
                 a.Comentario ?? "",
                 ExtrairIniciais(nome)
             );
@@ -140,8 +167,9 @@ public class PrestadorService : IPrestadorService
             Avatar: prestador.Usuario.FotoPerfilUrl ?? prestador.CapaUrl ?? "",
             Capa: prestador.CapaUrl ?? "",
             Bio: prestador.Bio ?? "Profissional cadastrado e verificado na plataforma Conecta Construções.",
-            ExperienciaAnos: prestador.ExperienciaAnos ?? 5,
-            ValorHora: prestador.ValorHoraInicial ?? 90.00m,
+            ExperienciaAnos: prestador.ExperienciaAnos,
+            ValorHora: prestador.ValorHoraInicial,
+            RaioAtendimentoKm: prestador.RaioAtendimentoKm,
             StatusDisponibilidade: prestador.StatusDisponibilidade.ToString(),
             TempoResposta: tempoRespostaTexto,
             Avaliacao: prestador.Usuario.MediaAvaliacao,
@@ -149,6 +177,7 @@ public class PrestadorService : IPrestadorService
             SeloSuper: prestador.SeloSuperprestador,
             Verificado: prestador.Usuario.Verificado,
             IsFavorited: isFavorited,
+            PodeAvaliar: podeAvaliar,
             Cidade: endereco?.CidadeNome ?? (endereco?.Cidade?.Nome ?? "Tupã"),
             Estado: endereco?.EstadoSigla ?? (endereco?.Cidade?.Estado?.Sigla ?? "SP"),
             Checklist: checklistPadrao,

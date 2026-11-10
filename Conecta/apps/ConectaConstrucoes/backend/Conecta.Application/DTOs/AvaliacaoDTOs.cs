@@ -1,7 +1,13 @@
 namespace Conecta.Application.DTOs;
 
 public record CriarAvaliacaoRequest(
-    int PedidoId,
+    int? PedidoId,
+    int? PrestadorId,
+    int Nota,
+    string? Comentario
+);
+
+public record AtualizarAvaliacaoRequest(
     int Nota,
     string? Comentario
 );

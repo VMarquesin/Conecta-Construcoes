@@ -7,6 +7,7 @@ export interface UsuarioSessao {
   nome: string
   email: string
   perfis: Perfil[]
+  fotoPerfilUrl?: string
 }
 
 export const PERFIL_INFO: Record<Perfil, { label: string; descricao: string; home: string }> = {

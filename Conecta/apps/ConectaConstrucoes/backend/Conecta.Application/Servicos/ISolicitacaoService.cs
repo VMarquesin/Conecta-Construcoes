@@ -9,4 +9,5 @@ public interface ISolicitacaoService
     Task<IEnumerable<SolicitacaoResponse>> ListarPorClienteAsync(int clienteId);
     Task<PropostaResponse> EnviarPropostaAsync(int prestadorId, int solicitacaoId, EnviarPropostaRequest request);
     Task RecusarSolicitacaoAsync(int prestadorId, int solicitacaoId);
+    Task CancelarSolicitacaoAsync(int clienteId, int solicitacaoId);
 }

@@ -134,9 +134,14 @@ public class EnumMappingTests
         Assert.Equal(StatusConta.ATIVA, admin.StatusConta);
         Assert.Equal(StatusVerificacao.COMPLETO, admin.StatusVerificacao);
 
-        var prestador = await context.Prestadores.Include(p => p.Usuario).FirstOrDefaultAsync(p => p.UsuarioId == 7);
+        var prestador = await context.Prestadores.Include(p => p.Usuario).FirstOrDefaultAsync(p => p.Usuario.Email == "carlos@conecta.com");
         Assert.NotNull(prestador);
         Assert.Equal(StatusDisponibilidade.DISPONIVEL, prestador.StatusDisponibilidade);
         Assert.Equal("Carlos Instalações Elétricas", prestador.NomeFantasia);
+
+        var pedidosConcluidos = await context.Pedidos
+            .Where(p => p.Status == StatusPedido.CONCLUIDO)
+            .ToListAsync();
+        Assert.NotNull(pedidosConcluidos);
     }
 }

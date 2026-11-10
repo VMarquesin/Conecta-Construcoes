@@ -12,6 +12,8 @@ import Login from '../pages/Login'
 import CadastroClientePage from '../features/cliente/pages/CadastroClientePage'
 import RequirePerfil from '../components/session/RequirePerfil'
 import { PERFIL_INFO, useSession } from '../context/SessionContext'
+import ClientLayout from '../core/layout/ClientLayout'
+import MensagensPage from '../pages/Mensagens'
 import AdminLayout from '../core/layout/AdminLayout'
 import AdminDashboard from '../pages/admin/AdminDashboard'
 import UsuariosLista from '../pages/admin/UsuariosLista'
@@ -32,18 +34,22 @@ export default function AppRoutes() {
 
       {/* ===== Perfil CLIENTE ===== */}
       <Route element={<RequirePerfil perfil="CLIENTE" />}>
-        <Route path="/" element={<Home />} />
-        <Route path="/inicio" element={<Home />} />
-        <Route path="/busca" element={<Busca />} />
-        <Route path="/pesquisa" element={<Busca />} />
-        <Route path="/prestador/:id" element={<PrestadorPerfil />} />
-        <Route path="/prestador" element={<PrestadorPerfil />} />
-        <Route path="/pedidos" element={<MeusPedidos />} />
-        <Route path="/meus-pedidos" element={<MeusPedidos />} />
-        <Route path="/pedidos/:id" element={<PedidoDetalhe />} />
-        <Route path="/pedido/:id" element={<PedidoDetalhe />} />
-        <Route path="/chat/:id" element={<ChatPedido />} />
-        <Route path="/chat" element={<ChatPedido />} />
+        <Route element={<ClientLayout />}>
+          <Route path="/" element={<Home />} />
+          <Route path="/inicio" element={<Home />} />
+          <Route path="/busca" element={<Busca />} />
+          <Route path="/pesquisa" element={<Busca />} />
+          <Route path="/prestador/:id" element={<PrestadorPerfil />} />
+          <Route path="/prestador" element={<PrestadorPerfil />} />
+          <Route path="/pedidos" element={<MeusPedidos />} />
+          <Route path="/meus-pedidos" element={<MeusPedidos />} />
+          <Route path="/pedidos/:id" element={<PedidoDetalhe />} />
+          <Route path="/pedido/:id" element={<PedidoDetalhe />} />
+          <Route path="/chat/:id" element={<ChatPedido />} />
+          <Route path="/chat" element={<ChatPedido />} />
+          <Route path="/mensagens/:id" element={<MensagensPage />} />
+          <Route path="/mensagens" element={<MensagensPage />} />
+        </Route>
       </Route>
 
       {/* ===== Perfil PRESTADOR (Conecta PRO) ===== */}

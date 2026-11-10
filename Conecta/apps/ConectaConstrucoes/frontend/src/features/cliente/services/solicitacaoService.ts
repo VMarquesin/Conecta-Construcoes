@@ -9,9 +9,11 @@ export interface PortfolioItemDto {
 
 export interface AvaliacaoItemDto {
   id: number
+  clienteId: number
   nome: string
   nota: number
   data: string
+  criadoEm?: string
   comentario: string
   iniciais: string
 }
@@ -23,8 +25,10 @@ export interface PrestadorPerfilDetalhadoResponse {
   avatar: string
   capa: string
   bio: string
-  experienciaAnos: number
-  valorHora: number
+  experienciaAnos?: number | null
+  anosExperiencia?: number | null
+  valorHora?: number | null
+  raioAtendimentoKm?: number | null
   statusDisponibilidade: string
   tempoResposta: string
   avaliacao: number
@@ -32,6 +36,7 @@ export interface PrestadorPerfilDetalhadoResponse {
   seloSuper: boolean
   verificado: boolean
   isFavorited: boolean
+  podeAvaliar?: boolean
   cidade: string
   estado: string
   checklist: string[]
@@ -63,8 +68,9 @@ export interface SolicitacaoResponse {
 }
 
 export const solicitacaoService = {
-  async obterPerfilPrestador(id: number): Promise<PrestadorPerfilDetalhadoResponse> {
-    return await http<PrestadorPerfilDetalhadoResponse>(`/prestadores/${id}`)
+  async obterPerfilPrestador(id: number, clienteId?: number): Promise<PrestadorPerfilDetalhadoResponse> {
+    const qs = clienteId ? `?clienteId=${clienteId}` : ''
+    return await http<PrestadorPerfilDetalhadoResponse>(`/prestadores/${id}${qs}`)
   },
 
   async alternarFavorito(prestadorId: number): Promise<{ favoritado: boolean; mensagem: string }> {
@@ -78,6 +84,12 @@ export const solicitacaoService = {
     return await http<SolicitacaoResponse>(`/solicitacoes${qs}`, {
       method: 'POST',
       body: JSON.stringify(dados),
+    })
+  },
+
+  async cancelarSolicitacao(id: number): Promise<{ mensagem: string }> {
+    return await http<{ mensagem: string }>(`/solicitacoes/${id}/cancelar`, {
+      method: 'POST',
     })
   },
 }

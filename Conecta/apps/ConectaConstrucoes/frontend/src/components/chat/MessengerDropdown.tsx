@@ -10,6 +10,7 @@ export default function MessengerDropdown() {
     setDropdownAberto,
     conversas,
     abrirChat,
+    marcarTodasComoLidas,
   } = useChat()
 
   const [filtroAba, setFiltroAba] = useState<'tudo' | 'nao-lidas' | 'servicos'>('tudo')
@@ -69,7 +70,8 @@ export default function MessengerDropdown() {
             title="Expandir para tela cheia"
             onClick={() => {
               setDropdownAberto(false)
-              navigate('/chat')
+              marcarTodasComoLidas()
+              navigate('/mensagens')
             }}
           >
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
@@ -181,7 +183,8 @@ export default function MessengerDropdown() {
           className="messenger-see-all-btn"
           onClick={() => {
             setDropdownAberto(false)
-            navigate('/chat')
+            marcarTodasComoLidas()
+            navigate('/mensagens')
           }}
         >
           Ver tudo no Messenger

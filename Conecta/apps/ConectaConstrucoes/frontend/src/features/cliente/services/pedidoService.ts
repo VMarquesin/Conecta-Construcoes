@@ -16,6 +16,8 @@ export interface PedidoResumoResponse {
   valorIsPreco?: boolean
   statusDica: string
   dicaIcone: 'clock' | 'truck' | 'check' | 'calendar' | string
+  podeAvaliar?: boolean
+  jaAvaliado?: boolean
 }
 
 export interface ItemPropostaResponse {

@@ -44,15 +44,78 @@ public class AvaliacoesController : ControllerBase
         }
         catch (UnauthorizedAccessException ex)
         {
-            return Forbid(ex.Message);
+            return StatusCode(StatusCodes.Status403Forbidden, new { mensagem = ex.Message });
         }
         catch (InvalidOperationException ex)
         {
-            return BadRequest(new { mensagem = ex.Message });
+            return StatusCode(StatusCodes.Status409Conflict, new { mensagem = ex.Message });
         }
         catch (ArgumentException ex)
         {
             return BadRequest(new { mensagem = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Edita uma avaliação existente. Permitido apenas dentro do prazo de 1 hora da criação pelo autor.
+    /// </summary>
+    [HttpPut("{id:int}")]
+    [Authorize]
+    [ProducesResponseType(typeof(AvaliacaoResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> AtualizarAvaliacao(int id, [FromBody] AtualizarAvaliacaoRequest request)
+    {
+        var usuarioIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!int.TryParse(usuarioIdClaim, out var clienteId))
+            return Unauthorized(new { mensagem = "Usuário não autenticado." });
+
+        try
+        {
+            var response = await _avaliacaoService.AtualizarAvaliacaoAsync(id, clienteId, request);
+            return Ok(response);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { mensagem = ex.Message });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { mensagem = ex.Message });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { mensagem = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Remove uma avaliação existente. Permitido apenas dentro do prazo de 1 hora da criação pelo autor.
+    /// </summary>
+    [HttpDelete("{id:int}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> RemoverAvaliacao(int id)
+    {
+        var usuarioIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!int.TryParse(usuarioIdClaim, out var clienteId))
+            return Unauthorized(new { mensagem = "Usuário não autenticado." });
+
+        try
+        {
+            await _avaliacaoService.RemoverAvaliacaoAsync(id, clienteId);
+            return Ok(new { mensagem = "Avaliação excluída com sucesso." });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { mensagem = ex.Message });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { mensagem = ex.Message });
         }
     }
 

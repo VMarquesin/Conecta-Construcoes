@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import AccountTrigger from '../../components/session/AccountTrigger'
+import { useToast } from '../../core/hooks/useToast'
 import { proService, type FotoPortfolioDto } from '../../features/pro/services/proService'
 import './ProPortfolio.css'
 
 export default function ProPortfolio() {
   const navigate = useNavigate()
+  const toast = useToast()
 
   const [loading, setLoading] = useState(true)
   const [salvandoBio, setSalvandoBio] = useState(false)
@@ -53,9 +55,9 @@ export default function ProPortfolio() {
     try {
       await proService.atualizarBio(sobreMimTexto)
       setSalvoFeedback(true)
-      alert('Texto de apresentação atualizado na sua vitrine pública!')
+      toast.success('Texto de apresentação atualizado na sua vitrine pública!')
     } catch (err: any) {
-      alert(err.message || 'Erro ao salvar texto de apresentação.')
+      toast.error(err.message || 'Erro ao salvar texto de apresentação.')
     } finally {
       setSalvandoBio(false)
     }
@@ -69,8 +71,9 @@ export default function ProPortfolio() {
           await proService.removerFotoPortfolio(numId)
         }
         setFotos((prev) => prev.filter((f) => f.id !== id))
+        toast.success('Foto removida do portfólio.')
       } catch (err: any) {
-        alert(err.message || 'Erro ao remover foto do portfólio.')
+        toast.error(err.message || 'Erro ao remover foto do portfólio.')
       }
     }
   }
@@ -90,9 +93,9 @@ export default function ProPortfolio() {
         imagemUrl: '',
       })
       setFotos((prev) => [novoItem, ...prev])
-      alert('Novo trabalho adicionado ao portfólio com sucesso!')
+      toast.success('Novo trabalho adicionado ao portfólio com sucesso!')
     } catch (err: any) {
-      alert(err.message || 'Erro ao adicionar item ao portfólio.')
+      toast.error(err.message || 'Erro ao adicionar item ao portfólio.')
     }
   }
 
@@ -355,7 +358,7 @@ export default function ProPortfolio() {
 
           <button
             className="pro-bottom-item"
-            onClick={() => alert('Abrindo agenda...')}
+            onClick={() => toast.info('Abrindo agenda...')}
           >
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />

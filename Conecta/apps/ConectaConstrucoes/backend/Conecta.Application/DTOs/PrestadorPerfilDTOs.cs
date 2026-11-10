@@ -9,9 +9,11 @@ public record PortfolioItemDto(
 
 public record AvaliacaoItemDto(
     int Id,
+    int ClienteId,
     string Nome,
     int Nota,
     string Data,
+    DateTime CriadoEm,
     string Comentario,
     string Iniciais
 );
@@ -23,8 +25,9 @@ public record PrestadorPerfilDetalhadoResponse(
     string Avatar,
     string Capa,
     string Bio,
-    int ExperienciaAnos,
-    decimal ValorHora,
+    int? ExperienciaAnos,
+    decimal? ValorHora,
+    int? RaioAtendimentoKm,
     string StatusDisponibilidade,
     string TempoResposta,
     decimal Avaliacao,
@@ -32,6 +35,7 @@ public record PrestadorPerfilDetalhadoResponse(
     bool SeloSuper,
     bool Verificado,
     bool IsFavorited,
+    bool PodeAvaliar,
     string Cidade,
     string Estado,
     List<string> Checklist,

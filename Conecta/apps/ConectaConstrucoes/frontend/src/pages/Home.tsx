@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import HeaderChatButton from '../components/chat/HeaderChatButton'
 import AccountTrigger from '../components/session/AccountTrigger'
-import { useSession } from '../context/SessionContext'
 import { vitrineService, type CategoriaResponse, type PrestadorBuscaItemResponse } from '../features/cliente/services/vitrineService'
 import './Home.css'
 
@@ -57,7 +55,6 @@ function getCategoryIcon(slug: string) {
 
 export default function Home() {
   const navigate = useNavigate()
-  const { usuario } = useSession()
   const [busca, setBusca] = useState('')
   const [categoriaAtiva, setCategoriaAtiva] = useState<string | null>(null)
   const [categorias, setCategorias] = useState<CategoriaResponse[]>([])
@@ -102,70 +99,6 @@ export default function Home() {
   return (
     <div className="home-viewport">
       <div className="home-container">
-        {/* Header Superior Responsivo */}
-        <header className="home-header">
-          <div className="header-inner">
-            <Link to="/" className="home-brand">
-              <div className="home-brand-logo">
-                <svg width="34" height="34" viewBox="0 0 32 32" fill="none">
-                  <rect width="32" height="32" rx="9" fill="#0056D6" />
-                  <path
-                    d="M9 16.5L13.5 21L23 11.5"
-                    stroke="white"
-                    strokeWidth="3.2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-              <div className="home-brand-text">
-                <span className="home-title">Conecta</span>
-                <span className="home-brand-tag">Construções</span>
-              </div>
-            </Link>
-
-            {/* Navegação Desktop */}
-            <nav className="desktop-nav">
-              <Link to="/" className="desktop-nav-link active">Início</Link>
-              <Link to="/busca" className="desktop-nav-link">Buscar Serviços</Link>
-              <Link to="/pedidos" className="desktop-nav-link">Meus Pedidos</Link>
-            </nav>
-
-            {/* Ações da Direita */}
-            <div className="home-header-actions">
-              <div className="header-location-pill" title="Localização selecionada">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
-                </svg>
-                <span>São Paulo, SP</span>
-              </div>
-
-              <HeaderChatButton />
-
-              <button className="header-action-btn" title="Notificações" aria-label="Notificações">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                </svg>
-                <span className="header-badge-dot" />
-              </button>
-
-              <AccountTrigger className="user-profile-widget" title="Minha conta">
-                <div className="user-avatar-btn">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-                    <circle cx="12" cy="7" r="4" />
-                  </svg>
-                </div>
-                <div className="user-profile-text">
-                  <span className="user-profile-name">{usuario?.nome.split(' ')[0]}</span>
-                  <span className="user-profile-role">Cliente</span>
-                </div>
-              </AccountTrigger>
-            </div>
-          </div>
-        </header>
-
         {/* Conteúdo Principal */}
         <main className="home-main">
           {/* Seção Hero: Boas-vindas + Banner Conecta Segura (Lado a lado no Desktop) */}

@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useChat } from '../context/ChatContext'
-import HeaderChatButton from '../components/chat/HeaderChatButton'
 import AccountTrigger from '../components/session/AccountTrigger'
 import { vitrineService, type PrestadorBuscaItemResponse } from '../features/cliente/services/vitrineService'
 import './Busca.css'
@@ -114,8 +113,6 @@ export default function Busca() {
                   <line x1="21" y1="21" x2="16.65" y2="16.65" />
                 </svg>
               </button>
-
-              <HeaderChatButton />
             </div>
 
             {/* Linha de Metadados: Contagem + Link para Mapa */}
@@ -199,17 +196,6 @@ export default function Busca() {
             ) : (
               profissionaisFiltrados.map((prof) => (
                 <article key={prof.id} className="search-prof-card">
-                  {/* Badge de Destaque na Região se aplicável */}
-                  {prof.destaqueRegiao && (
-                    <div className="card-featured-badge">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="10" />
-                        <path d="M12 6v6l4 2" />
-                      </svg>
-                      <span>Destaque na Região</span>
-                    </div>
-                  )}
-
                   {/* Topo com Avatar e Informações */}
                   <div className="search-prof-header">
                     <div className="search-avatar-wrapper">
@@ -264,12 +250,23 @@ export default function Busca() {
                     </div>
                   </div>
 
-                  {/* Faixa de Raio e Localização */}
-                  <div className="location-radius-pill">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
-                    </svg>
-                    <span>{prof.distanciaTexto}</span>
+                  {/* Faixa de Raio e Localização + Destaque na Região */}
+                  <div className="flex items-center gap-2 flex-wrap" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <div className="location-radius-pill">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                      </svg>
+                      <span>{prof.distanciaTexto}</span>
+                    </div>
+
+                    {prof.destaqueRegiao && (
+                      <div className="card-featured-badge">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                        </svg>
+                        <span>Destaque na Região</span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Tags e Serviços Oferecidos */}

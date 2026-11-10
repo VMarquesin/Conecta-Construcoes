@@ -131,6 +131,19 @@ public class SolicitacaoService : ISolicitacaoService
         await _solicitacaoRepository.AtualizarStatusAsync(solicitacaoId, "RECUSADA");
     }
 
+    public async Task CancelarSolicitacaoAsync(int clienteId, int solicitacaoId)
+    {
+        var solicitacao = await _solicitacaoRepository.ObterPorIdAsync(solicitacaoId)
+            ?? throw new KeyNotFoundException($"Solicitação #{solicitacaoId} não encontrada.");
+
+        if (solicitacao.ClienteId != clienteId)
+        {
+            throw new UnauthorizedAccessException("Apenas o cliente solicitante pode cancelar a solicitação.");
+        }
+
+        await _solicitacaoRepository.AtualizarStatusAsync(solicitacaoId, "CANCELADA");
+    }
+
     private static SolicitacaoResponse MapearParaResponse(Solicitacao s)
     {
         return new SolicitacaoResponse(

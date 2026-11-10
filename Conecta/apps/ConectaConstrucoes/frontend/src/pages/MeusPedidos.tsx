@@ -1,17 +1,20 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useChat } from '../context/ChatContext'
-import HeaderChatButton from '../components/chat/HeaderChatButton'
+import { useToast } from '../core/hooks/useToast'
 import AccountTrigger from '../components/session/AccountTrigger'
 import { pedidoService, type PedidoResumoResponse } from '../features/cliente/services/pedidoService'
+import { solicitacaoService } from '../features/cliente/services/solicitacaoService'
+import { chatService } from '../features/cliente/services/chatService'
 import './MeusPedidos.css'
 
 export default function MeusPedidos() {
   const navigate = useNavigate()
   const { abrirChat } = useChat()
+  const toast = useToast()
   const [pedidos, setPedidos] = useState<PedidoResumoResponse[]>([])
   const [loading, setLoading] = useState(true)
-  const [abaAtiva, setAbaAtiva] = useState<'pendente' | 'aceito' | 'concluido'>('pendente')
+  const [abaAtiva, setAbaAtiva] = useState<'pendente' | 'aceito' | 'concluido' | 'cancelado'>('pendente')
   const [pedidoSelecionado, setPedidoSelecionado] = useState<PedidoResumoResponse | null>(null)
 
   const carregarPedidos = () => {
@@ -27,21 +30,70 @@ export default function MeusPedidos() {
     carregarPedidos()
   }, [])
 
-  const numPendentes = pedidos.filter((p) => p.status === 'pendente').length
-  const numAceitos = pedidos.filter((p) => p.status === 'aceito').length
-  const numConcluidos = pedidos.filter((p) => p.status === 'concluido').length
+  const isCancelado = (p: PedidoResumoResponse) => {
+    const s = (p.status || '').toUpperCase()
+    return s === 'CANCELADO' || s === 'CANCELADA' || s === 'RECUSADO' || s === 'RECUSADA'
+  }
 
-  const pedidosFiltrados = pedidos.filter((p) => p.status === abaAtiva)
+  const isPendente = (p: PedidoResumoResponse) => {
+    const s = (p.status || '').toUpperCase()
+    return (s === 'PENDENTE' || s === 'ABERTA' || s === 'AGUARDANDO_PROPOSTA' || s === 'AGUARDANDO_ACEITE') && !isCancelado(p)
+  }
 
-  const handleCancelar = async (id: number, prestadorNome: string) => {
-    if (confirm(`Deseja realmente cancelar o pedido com ${prestadorNome}?`)) {
+  const isAceito = (p: PedidoResumoResponse) => {
+    const s = (p.status || '').toUpperCase()
+    return (s === 'ACEITO' || s === 'AGENDADO' || s === 'EM_EXECUCAO' || s === 'ACEITA') && !isCancelado(p)
+  }
+
+  const isConcluido = (p: PedidoResumoResponse) => {
+    const s = (p.status || '').toUpperCase()
+    return (s === 'CONCLUIDO' || s === 'FINALIZADO' || s === 'CONCLUIDA') && !isCancelado(p)
+  }
+
+  const numPendentes = pedidos.filter(isPendente).length
+  const numAceitos = pedidos.filter(isAceito).length
+  const numConcluidos = pedidos.filter(isConcluido).length
+  const numCancelados = pedidos.filter(isCancelado).length
+
+  const pedidosFiltrados = pedidos.filter((p) => {
+    if (abaAtiva === 'pendente') return isPendente(p)
+    if (abaAtiva === 'aceito') return isAceito(p)
+    if (abaAtiva === 'concluido') return isConcluido(p)
+    if (abaAtiva === 'cancelado') return isCancelado(p)
+    return true
+  })
+
+  const handleCancelar = async (pedido: PedidoResumoResponse) => {
+    const nome = pedido.prestadorNome || 'o profissional'
+    if (confirm(`Deseja realmente cancelar este pedido com ${nome}?`)) {
       try {
-        await pedidoService.cancelarPedido(id)
-        alert('Pedido cancelado com sucesso.')
+        const s = (pedido.status || '').toUpperCase()
+        if (s === 'ABERTA' || s === 'AGUARDANDO_PROPOSTA') {
+          await solicitacaoService.cancelarSolicitacao(pedido.id)
+        } else {
+          await pedidoService.cancelarPedido(pedido.id)
+        }
+
+        // Integração Chat: Envia mensagem automática no chat
+        if (pedido.prestadorId > 0) {
+          try {
+            const conversa = await chatService.iniciarConversa(pedido.prestadorId, pedido.id)
+            const conversaId = conversa.conversaId || Number(conversa.id)
+            if (conversaId > 0) {
+              await chatService.enviarMensagem(conversaId, {
+                texto: 'A solicitação de orçamento foi cancelada pelo cliente.',
+              })
+            }
+          } catch (chatErr) {
+            console.warn('Não foi possível enviar mensagem automática no chat:', chatErr)
+          }
+        }
+
+        toast.success('Pedido cancelado com sucesso.')
         carregarPedidos()
       } catch (err: any) {
         console.error('Erro ao cancelar pedido:', err)
-        alert(err.message || 'Erro ao cancelar o pedido.')
+        toast.error(err.message || 'Erro ao cancelar o pedido.')
       }
     }
   }
@@ -49,54 +101,6 @@ export default function MeusPedidos() {
   return (
     <div className="pedidos-viewport">
       <div className="pedidos-container">
-        {/* Header Superior */}
-        <header className="pedidos-header">
-          <div className="pedidos-header-inner">
-            <Link to="/" className="home-brand">
-              <div className="home-brand-logo">
-                <svg width="34" height="34" viewBox="0 0 32 32" fill="none">
-                  <rect width="32" height="32" rx="9" fill="#0056D6" />
-                  <path
-                    d="M9 16.5L13.5 21L23 11.5"
-                    stroke="white"
-                    strokeWidth="3.2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-              <div className="home-brand-text">
-                <span className="home-title">Início</span>
-              </div>
-            </Link>
-
-            {/* Desktop Navigation */}
-            <nav className="desktop-nav">
-              <Link to="/" className="desktop-nav-link">Início</Link>
-              <Link to="/busca" className="desktop-nav-link">Buscar Serviços</Link>
-              <Link to="/pedidos" className="desktop-nav-link active">Meus Pedidos</Link>
-            </nav>
-
-            <div className="home-header-actions">
-              <HeaderChatButton />
-
-              <button className="header-action-btn" title="Notificações" aria-label="Notificações">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                </svg>
-              </button>
-
-              <AccountTrigger className="user-avatar-btn" title="Minha conta">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
-              </AccountTrigger>
-            </div>
-          </div>
-        </header>
-
         {/* Conteúdo Principal */}
         <main className="pedidos-main">
           {/* Título e Ação de Ajuda */}
@@ -109,7 +113,7 @@ export default function MeusPedidos() {
             <button
               className="pedidos-support-btn"
               title="Central de Ajuda e Suporte aos Pedidos"
-              onClick={() => alert('Abrindo canal direto de suporte ao cliente...')}
+              onClick={() => toast.info('Abrindo canal direto de suporte ao cliente...')}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
@@ -142,6 +146,14 @@ export default function MeusPedidos() {
             >
               <span>Concluídos</span>
               <span className="tab-badge green">{numConcluidos}</span>
+            </button>
+
+            <button
+              className={`tab-btn ${abaAtiva === 'cancelado' ? 'active' : ''}`}
+              onClick={() => setAbaAtiva('cancelado')}
+            >
+              <span>Cancelados</span>
+              <span className="tab-badge gray">{numCancelados}</span>
             </button>
           </div>
 
@@ -217,17 +229,20 @@ export default function MeusPedidos() {
 
                     <span
                       className={`pedido-status-pill ${
-                        pedido.status === 'pendente'
+                        isCancelado(pedido)
+                          ? 'status-cancelado'
+                          : isPendente(pedido)
                           ? 'status-pendente'
-                          : pedido.status === 'aceito'
+                          : isAceito(pedido)
                           ? 'status-aceito'
                           : 'status-concluido'
                       }`}
                     >
-                      {pedido.status === 'pendente' && '⏳ '}
-                      {pedido.status === 'aceito' && '✓ '}
-                      {pedido.status === 'concluido' && '★ '}
-                      {pedido.statusTexto}
+                      {isCancelado(pedido) && '✕ '}
+                      {isPendente(pedido) && '⏳ '}
+                      {isAceito(pedido) && '✓ '}
+                      {isConcluido(pedido) && '★ '}
+                      {isCancelado(pedido) ? 'Cancelado' : pedido.statusTexto}
                     </span>
                   </div>
 
@@ -280,23 +295,35 @@ export default function MeusPedidos() {
 
                   {/* Ações do Card */}
                   <div className="pedido-card-actions">
-                    <button
-                      className="btn-cancelar-pedido"
-                      onClick={() => handleCancelar(pedido.id, pedido.prestadorNome)}
-                    >
-                      Cancelar Pedido
-                    </button>
+                    {isCancelado(pedido) ? (
+                      <span className="badge-cancelado-tag">✕ Pedido Cancelado</span>
+                    ) : (
+                      <>
+                        {/* Status pendentes: exibe APENAS o botão Cancelar Pedido */}
+                        {isPendente(pedido) && (
+                          <button
+                            className="btn-cancelar-pedido"
+                            onClick={() => handleCancelar(pedido)}
+                          >
+                            Cancelar Pedido
+                          </button>
+                        )}
 
-                    <button
-                      className="btn-detalhes-pedido"
-                      onClick={() => navigate(pedido.id === 1 ? '/pedidos/1042' : `/pedidos/${pedido.id}`)}
-                    >
-                      <span>Ver Detalhes</span>
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                        <line x1="5" y1="12" x2="19" y2="12" />
-                        <polyline points="12 5 19 12 12 19" />
-                      </svg>
-                    </button>
+                        {/* Botão Ver Detalhes: só renderiza quando ACEITA ou CONCLUIDA */}
+                        {(isAceito(pedido) || isConcluido(pedido)) && (
+                          <button
+                            className="btn-detalhes-pedido"
+                            onClick={() => navigate(`/pedidos/${pedido.id}`)}
+                          >
+                            <span>Ver Detalhes</span>
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                              <line x1="5" y1="12" x2="19" y2="12" />
+                              <polyline points="12 5 19 12 12 19" />
+                            </svg>
+                          </button>
+                        )}
+                      </>
+                    )}
                   </div>
                 </article>
               ))

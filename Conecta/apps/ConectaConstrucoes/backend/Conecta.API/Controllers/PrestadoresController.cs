@@ -40,13 +40,17 @@ public class PrestadoresController : ControllerBase
     [AllowAnonymous]
     [ProducesResponseType(typeof(PrestadorPerfilDetalhadoResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> ObterPorId(int id)
+    public async Task<IActionResult> ObterPorId(int id, [FromQuery] int? clienteId = null)
     {
         int? clienteLogadoId = null;
         var claimId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
         if (int.TryParse(claimId, out var parsedId))
         {
             clienteLogadoId = parsedId;
+        }
+        else if (clienteId.HasValue && clienteId.Value > 0)
+        {
+            clienteLogadoId = clienteId.Value;
         }
 
         var perfil = await _prestadorService.ObterPerfilDetalhadoAsync(id, clienteLogadoId);

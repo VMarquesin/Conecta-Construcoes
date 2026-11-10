@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
-import AccountTrigger from '../components/session/AccountTrigger'
+import { useNavigate, useParams } from 'react-router-dom'
+import { useToast } from '../core/hooks/useToast'
 import { chatService, type MensagemItemResponse } from '../features/cliente/services/chatService'
 import { pedidoService } from '../features/cliente/services/pedidoService'
 import './ChatPedido.css'
 
 export default function ChatPedido() {
   const navigate = useNavigate()
+  const toast = useToast()
   const { id } = useParams<{ id?: string }>()
   const pedidoNumero = id || '1'
 
@@ -63,7 +64,7 @@ export default function ChatPedido() {
       setMensagens((prev) => [...prev, msgCriada])
     } catch (err: any) {
       console.error('Erro ao enviar mensagem:', err)
-      alert(err.message || 'Erro ao enviar a mensagem.')
+      toast.error(err.message || 'Erro ao enviar a mensagem.')
       setNovoTexto(texto)
     } finally {
       setEnviando(false)
@@ -77,51 +78,6 @@ export default function ChatPedido() {
   return (
     <div className="chat-viewport">
       <div className="chat-container">
-        {/* Top Header Global Responsivo */}
-        <header className="chat-global-header">
-          <div className="header-inner">
-            <Link to="/" className="home-brand">
-              <div className="home-brand-logo">
-                <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-                  <rect width="32" height="32" rx="9" fill="#0056D6" />
-                  <path
-                    d="M9 16.5L13.5 21L23 11.5"
-                    stroke="white"
-                    strokeWidth="3.2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-              <div className="home-brand-text">
-                <span className="home-title">Início</span>
-              </div>
-            </Link>
-
-            <nav className="desktop-nav">
-              <Link to="/" className="desktop-nav-link">Início</Link>
-              <Link to="/busca" className="desktop-nav-link">Buscar Serviços</Link>
-              <Link to="/pedidos" className="desktop-nav-link active">Meus Pedidos</Link>
-            </nav>
-
-            <div className="home-header-actions">
-              <button className="header-action-btn" title="Notificações">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                </svg>
-                <span className="header-badge-dot" />
-              </button>
-              <AccountTrigger className="user-avatar-btn" title="Minha conta">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
-              </AccountTrigger>
-            </div>
-          </div>
-        </header>
-
         {/* Header do Chat com o Prestador */}
         <div className="chat-conversation-header">
           <div className="chat-header-left">
@@ -168,7 +124,7 @@ export default function ChatPedido() {
             <button
               className="chat-action-circle"
               title={`Ligar para ${prestadorNome}`}
-              onClick={() => alert(`Ligação direta iniciada com ${prestadorNome}`)}
+              onClick={() => toast.info(`Ligação direta iniciada com ${prestadorNome}`)}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
@@ -426,7 +382,7 @@ export default function ChatPedido() {
             type="button"
             className="chat-attach-btn"
             title="Anexar foto ou arquivo"
-            onClick={() => alert('Abrindo seletor de imagens...')}
+            onClick={() => toast.info('Abrindo seletor de imagens...')}
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />

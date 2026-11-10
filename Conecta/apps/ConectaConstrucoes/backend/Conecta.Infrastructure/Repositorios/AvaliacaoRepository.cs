@@ -39,6 +39,14 @@ public class AvaliacaoRepository : IAvaliacaoRepository
             .FirstOrDefaultAsync(a => a.PedidoId == pedidoId);
     }
 
+    public async Task<Avaliacao?> ObterPorClienteEPrestadorAsync(int clienteId, int prestadorId)
+    {
+        return await _context.Avaliacoes
+            .Include(a => a.Cliente)
+                .ThenInclude(c => c.Usuario)
+            .FirstOrDefaultAsync(a => a.ClienteId == clienteId && a.PrestadorId == prestadorId);
+    }
+
     public async Task<IEnumerable<Avaliacao>> ListarPorPrestadorAsync(int prestadorId)
     {
         return await _context.Avaliacoes
@@ -47,5 +55,17 @@ public class AvaliacaoRepository : IAvaliacaoRepository
             .Where(a => a.PrestadorId == prestadorId)
             .OrderByDescending(a => a.DataCriacao)
             .ToListAsync();
+    }
+
+    public async Task AtualizarAsync(Avaliacao avaliacao)
+    {
+        _context.Avaliacoes.Update(avaliacao);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task RemoverAsync(Avaliacao avaliacao)
+    {
+        _context.Avaliacoes.Remove(avaliacao);
+        await _context.SaveChangesAsync();
     }
 }

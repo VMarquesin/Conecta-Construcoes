@@ -42,6 +42,17 @@ export const chatService = {
     }
   },
 
+  async obterConversa(id: number): Promise<ConversaResponse> {
+    return await http<ConversaResponse>(`/conversas/${id}`)
+  },
+
+  async iniciarConversa(prestadorId: number, pedidoId?: number): Promise<ConversaResponse> {
+    return await http<ConversaResponse>('/conversas/iniciar', {
+      method: 'POST',
+      body: JSON.stringify({ prestadorId, pedidoId }),
+    })
+  },
+
   async listarMensagens(pedidoOuConversaId: number, usuarioId?: number): Promise<MensagemItemResponse[]> {
     const qs = usuarioId ? `?usuarioId=${usuarioId}` : ''
     return await http<MensagemItemResponse[]>(`/conversas/${pedidoOuConversaId}/mensagens${qs}`)
@@ -57,5 +68,13 @@ export const chatService = {
       method: 'POST',
       body: JSON.stringify(request),
     })
+  },
+
+  async marcarComoLida(conversaId: number): Promise<void> {
+    try {
+      await http<void>(`/conversas/${conversaId}/lidas`, { method: 'POST' })
+    } catch {
+      // Silencioso em caso de erro de rede
+    }
   },
 }

@@ -56,6 +56,35 @@ public class SolicitacoesController : ControllerBase
     }
 
     /// <summary>
+    /// Lista solicitações de serviço de um cliente.
+    /// </summary>
+    [HttpGet("cliente/{clienteId:int}")]
+    [Authorize]
+    [ProducesResponseType(typeof(IEnumerable<SolicitacaoResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> ListarPorCliente(int clienteId)
+    {
+        var lista = await _solicitacaoService.ListarPorClienteAsync(clienteId);
+        return Ok(lista);
+    }
+
+    /// <summary>
+    /// Lista solicitações do cliente autenticado.
+    /// </summary>
+    [HttpGet("minhas")]
+    [Authorize]
+    [ProducesResponseType(typeof(IEnumerable<SolicitacaoResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> ListarMinhas()
+    {
+        var claimId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value;
+        if (!int.TryParse(claimId, out var usuarioId))
+            return Unauthorized(new { mensagem = "Usuário não autenticado." });
+
+        var lista = await _solicitacaoService.ListarPorClienteAsync(usuarioId);
+        return Ok(lista);
+    }
+
+    /// <summary>
     /// Obtém detalhes de uma solicitação de serviço pelo ID.
     /// </summary>
     [HttpGet("{id:int}")]
@@ -136,6 +165,40 @@ public class SolicitacoesController : ControllerBase
         {
             await _solicitacaoService.RecusarSolicitacaoAsync(idFinal, id);
             return Ok(new { mensagem = $"Solicitação #{id} recusada com sucesso." });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { mensagem = ex.Message });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { mensagem = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Cancela uma solicitação de serviço pelo cliente solicitante.
+    /// </summary>
+    [HttpPost("{id:int}/cancelar")]
+    [HttpPut("{id:int}/cancelar")]
+    [HttpPatch("{id:int}/cancelar")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Cancelar(int id)
+    {
+        var claimId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value;
+        if (!int.TryParse(claimId, out var clienteId))
+        {
+            return Unauthorized(new { mensagem = "Cliente não autenticado." });
+        }
+
+        try
+        {
+            await _solicitacaoService.CancelarSolicitacaoAsync(clienteId, id);
+            return Ok(new { mensagem = $"Solicitação #{id} cancelada com sucesso." });
         }
         catch (KeyNotFoundException ex)
         {

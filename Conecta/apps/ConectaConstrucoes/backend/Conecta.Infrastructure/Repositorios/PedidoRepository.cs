@@ -48,6 +48,7 @@ public class PedidoRepository : IPedidoRepository
             .Include(p => p.Prestador)
                 .ThenInclude(pr => pr.Usuario)
             .Include(p => p.Proposta)
+            .Include(p => p.Avaliacao)
             .AsNoTracking()
             .Where(p => p.ClienteId == usuarioId || p.PrestadorId == usuarioId);
 

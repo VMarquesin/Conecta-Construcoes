@@ -15,7 +15,9 @@ public record PedidoResumoResponse(
     string ValorTexto,
     bool ValorIsPreco,
     string StatusDica,
-    string DicaIcone // "clock", "truck", "calendar", "check"
+    string DicaIcone, // "clock", "truck", "calendar", "check"
+    bool PodeAvaliar = false,
+    bool JaAvaliado = false
 );
 
 public record PedidoDetalheResponse(

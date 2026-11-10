@@ -1044,3 +1044,76 @@
   color: #475569;
   line-height: 1.5;
 }
+
+/* ============================================================
+   ESTADOS DE LOADING E EMPTY STATE (SEM MOCKS)
+   ============================================================ */
+.detalhe-loading-card,
+.detalhe-empty-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 60px 24px;
+  text-align: center;
+  max-width: 580px;
+  margin: 40px auto;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+.detalhe-spinner {
+  width: 44px;
+  height: 44px;
+  border: 4px solid #e2e8f0;
+  border-top-color: #0056D6;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 20px auto;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.detalhe-loading-card h3,
+.detalhe-empty-card h3 {
+  font-size: 20px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 8px 0;
+}
+
+.detalhe-loading-card p,
+.detalhe-empty-card p {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0 0 24px 0;
+  line-height: 1.5;
+}
+
+.empty-icon-wrap {
+  width: 72px;
+  height: 72px;
+  background: #f1f5f9;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 18px auto;
+}
+
+.btn-voltar-pedidos {
+  background: #0056D6;
+  color: #ffffff;
+  border: none;
+  font-weight: 700;
+  font-size: 14.5px;
+  padding: 12px 24px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-voltar-pedidos:hover {
+  background: #0045ab;
+  transform: translateY(-1px);
+}

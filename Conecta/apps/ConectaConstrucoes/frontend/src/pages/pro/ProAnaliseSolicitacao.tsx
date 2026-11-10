@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { useToast } from '../../core/hooks/useToast'
 import AccountTrigger from '../../components/session/AccountTrigger'
 import { proService, type SolicitacaoDetalheResponse } from '../../features/pro/services/proService'
 import './ProAnaliseSolicitacao.css'
 
 export default function ProAnaliseSolicitacao() {
   const navigate = useNavigate()
+  const toast = useToast()
   const { id } = useParams<{ id?: string }>()
   const pedidoId = id || '1'
 
@@ -76,7 +78,7 @@ export default function ProAnaliseSolicitacao() {
         navigate('/pro')
       }, 1200)
     } catch (err: any) {
-      alert(err.message || 'Erro ao enviar proposta comercial.')
+      toast.error(err.message || 'Erro ao enviar proposta comercial.')
       setEnviando(false)
     }
   }
@@ -85,9 +87,10 @@ export default function ProAnaliseSolicitacao() {
     if (confirm('Deseja realmente recusar esta solicitação de serviço?')) {
       try {
         await proService.recusarSolicitacao(Number(pedidoId))
+        toast.info('Solicitação recusada.')
         navigate('/pro')
       } catch (err: any) {
-        alert(err.message || 'Erro ao recusar a solicitação.')
+        toast.error(err.message || 'Erro ao recusar a solicitação.')
       }
     }
   }

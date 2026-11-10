@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useChat } from '../../context/ChatContext'
+import { useToast } from '../../core/hooks/useToast'
 import './FloatingChatBox.css'
 
 export default function FloatingChatBox() {
   const navigate = useNavigate()
+  const toast = useToast()
   const {
     chatJanelaAtiva,
     isMinimizado,
@@ -112,7 +114,7 @@ export default function FloatingChatBox() {
           <button
             className="docked-btn-action"
             title="Ligação de voz"
-            onClick={() => alert(`Ligando para ${chatJanelaAtiva.nome}...`)}
+            onClick={() => toast.info(`Ligando para ${chatJanelaAtiva.nome}...`)}
           >
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
               <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
@@ -122,7 +124,7 @@ export default function FloatingChatBox() {
           <button
             className="docked-btn-action"
             title="Chamada de vídeo"
-            onClick={() => alert(`Iniciando chamada de vídeo com ${chatJanelaAtiva.nome}...`)}
+            onClick={() => toast.info(`Iniciando chamada de vídeo com ${chatJanelaAtiva.nome}...`)}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
               <polygon points="23 7 16 12 23 17 23 7" />
@@ -188,7 +190,16 @@ export default function FloatingChatBox() {
           // Prestador
           return (
             <div key={msg.id} className="docked-msg-row docked-msg-prestador">
-              <img src={chatJanelaAtiva.avatar} alt="" className="docked-bubble-avatar" />
+              {chatJanelaAtiva.avatar ? (
+                <img src={chatJanelaAtiva.avatar} alt={chatJanelaAtiva.nome} className="docked-bubble-avatar" />
+              ) : (
+                <div className="docked-bubble-avatar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#e2e8f0' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2">
+                    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
+                </div>
+              )}
               <div className="docked-bubble-wrapper">
                 {msg.texto && (
                   <div className="docked-bubble-prestador">
@@ -211,7 +222,11 @@ export default function FloatingChatBox() {
                       className="docked-btn-aprovar"
                       onClick={() => {
                         fecharJanela()
-                        navigate(`/pedidos/${chatJanelaAtiva.pedidoNumero || '1042'}`)
+                        if (chatJanelaAtiva.pedidoNumero) {
+                          navigate(`/pedidos/${chatJanelaAtiva.pedidoNumero}`)
+                        } else {
+                          navigate('/pedidos')
+                        }
                       }}
                     >
                       Ver Pedido & Pagar
@@ -233,7 +248,7 @@ export default function FloatingChatBox() {
             type="button"
             className="docked-tool-btn"
             title="Enviar áudio"
-            onClick={() => alert('Gravação de áudio iniciada...')}
+            onClick={() => toast.info('Gravação de áudio iniciada...')}
           >
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
               <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
@@ -246,7 +261,7 @@ export default function FloatingChatBox() {
             type="button"
             className="docked-tool-btn"
             title="Anexar foto"
-            onClick={() => alert('Abrindo galeria de fotos...')}
+            onClick={() => toast.info('Abrindo galeria de fotos...')}
           >
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
               <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />

@@ -3,12 +3,14 @@ import { Link, useNavigate } from 'react-router-dom'
 import HeaderChatButton from '../../components/chat/HeaderChatButton'
 import AccountTrigger from '../../components/session/AccountTrigger'
 import { useChat } from '../../context/ChatContext'
+import { useToast } from '../../core/hooks/useToast'
 import { proService, type ProSolicitacaoPendenteDto, type PedidoAgendaDto } from '../../features/pro/services/proService'
 import './ProDashboard.css'
 
 export default function ProDashboard() {
   const navigate = useNavigate()
   const { abrirChat } = useChat()
+  const toast = useToast()
 
   const [loading, setLoading] = useState(true)
   const [nome, setNome] = useState('Profissional')
@@ -89,8 +91,9 @@ export default function ProDashboard() {
     try {
       await proService.atualizarDisponibilidade(novoStatus)
       setDisponivel(!disponivel)
+      toast.success(disponivel ? 'Status alterado para Ocupado.' : 'Status alterado para Disponível.')
     } catch (err: any) {
-      alert(err.message || 'Erro ao atualizar disponibilidade.')
+      toast.error(err.message || 'Erro ao atualizar disponibilidade.')
     }
   }
 
@@ -99,8 +102,9 @@ export default function ProDashboard() {
       try {
         await proService.recusarSolicitacao(Number(id))
         setPedidosPendentes((prev) => prev.filter((p) => p.id !== id))
+        toast.info(`Solicitação de ${cliente} recusada.`)
       } catch (err: any) {
-        alert(err.message || 'Erro ao recusar solicitação.')
+        toast.error(err.message || 'Erro ao recusar solicitação.')
       }
     }
   }
@@ -450,7 +454,7 @@ export default function ProDashboard() {
 
           <button
             className="pro-bottom-item"
-            onClick={() => alert('Abrindo agenda de atendimentos do profissional...')}
+            onClick={() => toast.info('Abrindo agenda de atendimentos do profissional...')}
           >
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />

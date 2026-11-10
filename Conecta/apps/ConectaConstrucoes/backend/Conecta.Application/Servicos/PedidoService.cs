@@ -30,7 +30,7 @@ public class PedidoService : IPedidoService
 
         var pedidos = await _pedidoRepository.ListarPorUsuarioAsync(usuarioId, dbStatus);
 
-        return pedidos.Select(p =>
+        var listaPedidos = pedidos.Select(p =>
         {
             var statusAba = p.Status switch
             {
@@ -85,6 +85,9 @@ public class PedidoService : IPedidoService
                 ? p.Prestador.NomeFantasia
                 : "Profissional Verificado";
 
+            var podeAvaliar = p.Status == StatusPedido.CONCLUIDO && p.Avaliacao == null && p.ClienteId == usuarioId;
+            var jaAvaliado = p.Avaliacao != null;
+
             return new PedidoResumoResponse(
                 Id: p.Id,
                 PrestadorId: p.PrestadorId,
@@ -100,9 +103,55 @@ public class PedidoService : IPedidoService
                 ValorTexto: valorTexto,
                 ValorIsPreco: valorIsPreco,
                 StatusDica: statusDica,
-                DicaIcone: dicaIcone
+                DicaIcone: dicaIcone,
+                PodeAvaliar: podeAvaliar,
+                JaAvaliado: jaAvaliado
             );
-        });
+        }).ToList();
+
+        // Se estiver listando todas ou pendentes, inclui também as solicitações abertas/aguardando proposta do cliente
+        if (string.IsNullOrWhiteSpace(status) || status.Equals("pendente", StringComparison.OrdinalIgnoreCase))
+        {
+            var solicitacoes = await _solicitacaoRepository.ListarPorClienteAsync(usuarioId);
+            var pendentes = solicitacoes
+                .Where(s => s.Status == StatusSolicitacao.ABERTA || s.Status == StatusSolicitacao.AGUARDANDO_PROPOSTA || s.Status == StatusSolicitacao.CANCELADA)
+                .Where(s => !listaPedidos.Any(p => p.Id == s.Id || p.TituloServico == s.Titulo))
+                .Select(s =>
+                {
+                    var prestadorNome = s.Prestador?.NomeFantasia ?? s.Prestador?.Usuario?.Nome ?? "Prestador";
+                    var prestadorAvatar = s.Prestador?.Usuario?.FotoPerfilUrl ?? s.Prestador?.CapaUrl ?? "";
+                    var prestadorProfissao = !string.IsNullOrWhiteSpace(s.Prestador?.NomeFantasia)
+                        ? s.Prestador.NomeFantasia
+                        : (s.Categoria?.Nome ?? "Profissional Verificado");
+
+                    var isCancelada = s.Status == StatusSolicitacao.CANCELADA;
+                    var statusStr = isCancelada ? "CANCELADO" : "ABERTA";
+                    var statusTexto = isCancelada ? "Cancelado" : "Orçamento Aberto";
+                    var statusDica = isCancelada ? "Solicitação de orçamento cancelada" : "Solicitação enviada ao prestador";
+
+                    return new PedidoResumoResponse(
+                        Id: s.Id,
+                        PrestadorId: s.PrestadorId,
+                        PrestadorNome: prestadorNome,
+                        PrestadorProfissao: prestadorProfissao,
+                        PrestadorAvatar: prestadorAvatar,
+                        SolicitadoEm: FormatarDataAmigavel(s.CriadoEm),
+                        Status: statusStr,
+                        StatusTexto: statusTexto,
+                        TituloServico: s.Titulo,
+                        DescricaoServico: s.Descricao,
+                        ValorLabel: "Orçamento Estimado",
+                        ValorTexto: isCancelada ? "Cancelado" : "Aguardando proposta",
+                        ValorIsPreco: false,
+                        StatusDica: statusDica,
+                        DicaIcone: isCancelada ? "x" : "clock"
+                    );
+                });
+
+            listaPedidos.InsertRange(0, pendentes);
+        }
+
+        return listaPedidos;
     }
 
     public async Task<PedidoDetalheResponse?> ObterDetalhesAsync(int pedidoId, int usuarioId)
