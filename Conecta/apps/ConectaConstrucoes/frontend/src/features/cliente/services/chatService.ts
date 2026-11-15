@@ -24,6 +24,7 @@ export interface ConversaResponse {
   id: string
   conversaId: number
   prestadorId: number
+  clienteId?: number
   nome: string
   profissao: string
   avatar?: string
@@ -38,6 +39,17 @@ export interface ConversaResponse {
 
 export const chatService = {
   async listarConversas(perfil?: string | null, usuarioId?: number): Promise<ConversaResponse[]> {
+    const token =
+      localStorage.getItem('conecta.token') ||
+      localStorage.getItem('token') ||
+      localStorage.getItem('conecta_token') ||
+      localStorage.getItem('conecta.jwt')
+
+    // Trava de segurança (Guard Clause): só requisita se houver token
+    if (!token) {
+      return []
+    }
+
     try {
       if (perfil === 'PRESTADOR' && usuarioId) {
         return await http<ConversaResponse[]>(`/conversas/prestador/${usuarioId}`)
@@ -54,10 +66,17 @@ export const chatService = {
     return await http<ConversaResponse>(`/conversas/${id}`)
   },
 
-  async iniciarConversa(prestadorId: number, pedidoId?: number): Promise<ConversaResponse> {
+  async iniciarConversa(
+    prestadorOuDados: number | { prestadorId?: number; clienteId?: number; pedidoId?: number },
+    pedidoId?: number
+  ): Promise<ConversaResponse> {
+    const payload =
+      typeof prestadorOuDados === 'number'
+        ? { prestadorId: prestadorOuDados, pedidoId }
+        : prestadorOuDados
     return await http<ConversaResponse>('/conversas/iniciar', {
       method: 'POST',
-      body: JSON.stringify({ prestadorId, pedidoId }),
+      body: JSON.stringify(payload),
     })
   },
 

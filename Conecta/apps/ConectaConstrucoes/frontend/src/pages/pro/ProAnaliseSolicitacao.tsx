@@ -74,8 +74,9 @@ export default function ProAnaliseSolicitacao() {
         ],
       })
       setEnviadoSucesso(true)
+      toast.success('Proposta enviada com sucesso! Acompanhe na aba "Em Andamento".')
       setTimeout(() => {
-        navigate('/pro')
+        navigate('/pro/servicos')
       }, 1200)
     } catch (err: any) {
       toast.error(err.message || 'Erro ao enviar proposta comercial.')

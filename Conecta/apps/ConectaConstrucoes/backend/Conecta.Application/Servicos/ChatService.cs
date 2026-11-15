@@ -37,7 +37,16 @@ public class ChatService : IChatService
 
     public async Task<ConversaResumoResponse> IniciarConversaAsync(int clienteId, IniciarConversaRequest request)
     {
-        var c = await _chatRepository.ObterOuCriarAsync(clienteId, request.PrestadorId, request.PedidoId);
+        int cid = clienteId;
+        int pid = request.PrestadorId;
+
+        if (request.ClienteId.HasValue && request.ClienteId.Value > 0)
+        {
+            cid = request.ClienteId.Value;
+            pid = clienteId;
+        }
+
+        var c = await _chatRepository.ObterOuCriarAsync(cid, pid, request.PedidoId);
         return MapearConversa(c!, clienteId);
     }
 
@@ -149,7 +158,8 @@ public class ChatService : IChatService
             UltimaMensagem: ultimaTexto,
             Tempo: tempoTexto,
             PedidoNumero: c.PedidoId?.ToString(),
-            Mensagens: new List<MensagemItemResponse>()
+            Mensagens: new List<MensagemItemResponse>(),
+            ClienteId: c.ClienteId
         );
     }
 

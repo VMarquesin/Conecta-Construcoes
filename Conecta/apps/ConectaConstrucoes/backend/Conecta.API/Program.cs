@@ -3,6 +3,7 @@ using Conecta.Application;
 using Conecta.Infrastructure;
 using Conecta.Infrastructure.Database;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 
@@ -134,14 +135,19 @@ if (app.Environment.IsDevelopment() || true) // Disponível para visualização 
 }
 
 // Garante que a pasta wwwroot existe para arquivos estáticos (upload de portfólio)
-var wwwrootPath = Path.Combine(app.Environment.ContentRootPath, "wwwroot");
+var wwwrootPath = Path.Combine(builder.Environment.ContentRootPath, "wwwroot");
 if (!Directory.Exists(wwwrootPath))
 {
     Directory.CreateDirectory(wwwrootPath);
 }
 
-// Middleware de arquivos estáticos declarado ANTES de UseRouting para servir wwwroot
-app.UseStaticFiles();
+// Middleware de arquivos estáticos configurado com PhysicalFileProvider explicitamente antes de UseRouting
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(
+        Path.Combine(builder.Environment.ContentRootPath, "wwwroot")),
+    RequestPath = ""
+});
 
 app.UseRouting();
 

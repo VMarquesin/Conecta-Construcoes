@@ -64,7 +64,16 @@ export default function TopBar() {
 
   // Polling de Notificações Unificado (Cliente e Prestador)
   useEffect(() => {
-    if (!usuario?.id) return
+    const token =
+      localStorage.getItem('conecta.token') ||
+      localStorage.getItem('token') ||
+      localStorage.getItem('conecta_token') ||
+      localStorage.getItem('conecta.jwt')
+    if (!token || !usuario?.id) {
+      setNotificacoes([])
+      setNotificacoesCount(0)
+      return
+    }
 
     let isMounted = true
 
@@ -248,6 +257,13 @@ export default function TopBar() {
                 className={({ isActive }) => `client-nav-link ${isActive ? 'active' : ''}`}
               >
                 Painel Pro
+              </NavLink>
+              <NavLink
+                to="/pro/servicos"
+                className={({ isActive }) => `client-nav-link ${isActive ? 'active' : ''}`}
+                onClick={() => marcarNotificacoesComoLido()}
+              >
+                Meus Serviços
               </NavLink>
               <NavLink
                 to="/pro/portfolio"

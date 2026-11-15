@@ -1,12 +1,22 @@
 /**
  * Resolve e formata URLs de imagens para garantir que arquivos físicos servidos
  * pelo backend (ex: /uploads/portfolio/foto.jpg) sejam devidamente concatenados
- * com a variável de ambiente da API (VITE_API_URL), evitando imagens quebradas.
+ * com a variável de ambiente da API (VITE_API_URL) ou fallback para a porta 5000,
+ * evitando que o front-end tente carregar imagens em localhost:3000 (gerando 404).
  */
+export function obterApiBaseUrl(): string {
+  const envUrl = (import.meta.env.VITE_API_URL as string | undefined)?.trim()
+  if (envUrl && (envUrl.startsWith('http://') || envUrl.startsWith('https://'))) {
+    return envUrl.replace(/\/api(\/v\d+)?\/?$/, '')
+  }
+  // Fallback padrão para o backend .NET na porta 5000
+  return 'http://localhost:5000'
+}
+
 export function formatarUrlImagem(url?: string | null): string {
   if (!url) return ''
 
-  // URLs absolutas ou data/blob URLs já estão prontas
+  // URLs absolutas ou data/blob URLs já estão completas
   if (
     url.startsWith('http://') ||
     url.startsWith('https://') ||
@@ -16,15 +26,7 @@ export function formatarUrlImagem(url?: string | null): string {
     return url
   }
 
-  const rawApiUrl = (import.meta.env.VITE_API_URL as string | undefined) || ''
+  const baseHost = obterApiBaseUrl()
   const cleanPath = url.startsWith('/') ? url : `/${url}`
-
-  if (rawApiUrl) {
-    // Extrai o host base (ex: http://localhost:5000 se VITE_API_URL for http://localhost:5000/api/v1)
-    const baseHost = rawApiUrl.replace(/\/api(\/v\d+)?\/?$/, '')
-    return `${baseHost}${cleanPath}`
-  }
-
-  // No Vite dev ou Nginx, o caminho relativo /uploads/... é redirecionado via proxy
-  return cleanPath
+  return `${baseHost}${cleanPath}`
 }

@@ -32,11 +32,9 @@ public class ProService : IProService
         var solicitacoesPendentes = await _solicitacaoRepository.ListarPendentesPorPrestadorAsync(prestadorId);
         var endereco = await _prestadorRepository.ObterEnderecoPrincipalAsync(prestadorId);
 
-        // Calcula ganhos dos pedidos concluídos nos últimos 7 dias
+        // Calcula ganhos dos pedidos concluídos nos últimos 7 dias (estritamente StatusPedido.CONCLUIDO)
         var dataLimite = DateTime.UtcNow.AddDays(-7);
         var ganhosSemana = await _prestadorRepository.ObterGanhosConcluidosAsync(prestadorId, dataLimite);
-
-        if (ganhosSemana == 0) ganhosSemana = 840.00m; // Fallback demonstrativo
 
         var pendentesDtos = solicitacoesPendentes.Select(s =>
         {

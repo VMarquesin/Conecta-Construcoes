@@ -129,6 +129,14 @@ public class SolicitacaoService : ISolicitacaoService
         }
 
         await _solicitacaoRepository.AtualizarStatusAsync(solicitacaoId, "ACEITA");
+
+        if (solicitacao.Propostas != null && solicitacao.Propostas.Any())
+        {
+            foreach (var prop in solicitacao.Propostas)
+            {
+                await _solicitacaoRepository.AtualizarStatusPropostaAsync(prop.Id, "ACEITA");
+            }
+        }
     }
 
     public async Task RecusarSolicitacaoAsync(int prestadorId, int solicitacaoId)

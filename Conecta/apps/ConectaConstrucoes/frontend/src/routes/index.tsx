@@ -7,6 +7,7 @@ import PedidoDetalhe from '../pages/PedidoDetalhe'
 import ChatPedido from '../pages/ChatPedido'
 import ProDashboard from '../pages/pro/ProDashboard'
 import ProAnaliseSolicitacao from '../pages/pro/ProAnaliseSolicitacao'
+import ProServicos from '../pages/pro/ProServicos'
 import Login from '../pages/Login'
 import CadastroClientePage from '../features/cliente/pages/CadastroClientePage'
 import RequirePerfil from '../components/session/RequirePerfil'
@@ -57,6 +58,7 @@ export default function AppRoutes() {
         <Route element={<ProLayout />}>
           <Route path="/pro" element={<ProDashboard />} />
           <Route path="/pro/dashboard" element={<ProDashboard />} />
+          <Route path="/pro/servicos" element={<ProServicos />} />
           <Route path="/pro/solicitacao/:id" element={<ProAnaliseSolicitacao />} />
           <Route path="/pro/pedidos/:id/analisar" element={<ProAnaliseSolicitacao />} />
           <Route path="/pro/portfolio" element={<PrestadorPerfil />} />

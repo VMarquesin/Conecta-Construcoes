@@ -17,7 +17,9 @@ public record PedidoResumoResponse(
     string StatusDica,
     string DicaIcone, // "clock", "truck", "calendar", "check"
     bool PodeAvaliar = false,
-    bool JaAvaliado = false
+    bool JaAvaliado = false,
+    int ClienteId = 0,
+    string? ClienteNome = null
 );
 
 public record PedidoDetalheResponse(

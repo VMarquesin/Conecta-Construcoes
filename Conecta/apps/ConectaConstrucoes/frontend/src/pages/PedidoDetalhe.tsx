@@ -4,6 +4,7 @@ import { useChat } from '../context/ChatContext'
 import { useToast } from '../core/hooks/useToast'
 import AccountTrigger from '../components/session/AccountTrigger'
 import { pedidoService, type PedidoDetalheResponse } from '../features/cliente/services/pedidoService'
+import { solicitacaoService } from '../features/cliente/services/solicitacaoService'
 import { chatService } from '../features/cliente/services/chatService'
 import './PedidoDetalhe.css'
 
@@ -23,6 +24,7 @@ export default function PedidoDetalhe() {
   const [pagamentoConcluido, setPagamentoConcluido] = useState(false)
   const [metodoPagamento, setMetodoPagamento] = useState<'pix' | 'cartao'>('pix')
   const [pedidoCancelado, setPedidoCancelado] = useState(false)
+  const [confirmando, setConfirmando] = useState(false)
 
   const carregarDetalhe = () => {
     setLoading(true)
@@ -30,8 +32,17 @@ export default function PedidoDetalhe() {
     pedidoService
       .obterDetalhesPedido(Number(pedidoNumero))
       .then((data) => setPedido(data))
-      .catch((err) => {
+      .catch((err: any) => {
         console.error('Erro ao obter detalhes do pedido:', err)
+        if (
+          err?.status === 404 ||
+          err?.message?.includes('404') ||
+          err?.message?.includes('não encontrado')
+        ) {
+          toast.error('Pedido não encontrado ou excluído.')
+          navigate('/meus-pedidos')
+          return
+        }
         setErro('Não foi possível carregar os detalhes do pedido.')
       })
       .finally(() => setLoading(false))
@@ -85,6 +96,27 @@ export default function PedidoDetalhe() {
     } catch (err: any) {
       console.error('Erro ao realizar pagamento:', err)
       toast.error(err.message || 'Erro ao processar pagamento.')
+    }
+  }
+
+  const handleConfirmarOrcamento = async () => {
+    if (confirmando) return
+    try {
+      setConfirmando(true)
+      try {
+        await solicitacaoService.confirmarOrcamento(Number(pedidoNumero))
+      } catch {
+        await pedidoService.aceitarProposta(Number(pedidoNumero))
+      }
+      toast.success('Orçamento confirmado com sucesso!')
+      setTimeout(() => {
+        navigate('/meus-pedidos')
+      }, 500)
+    } catch (err: any) {
+      console.error('Erro ao confirmar orçamento:', err)
+      toast.error(err.message || 'Erro ao confirmar o orçamento.')
+    } finally {
+      setConfirmando(false)
     }
   }
 
@@ -456,6 +488,36 @@ export default function PedidoDetalhe() {
                   <div style={{ padding: '12px', background: '#dcfce7', color: '#15803d', borderRadius: '12px', fontWeight: 700, textAlign: 'center' }}>
                     ✓ Serviço concluído com sucesso
                   </div>
+                ) : statusUpper === 'AGUARDANDO_ACEITE' || statusUpper === 'PROPOSTA_RECEBIDA' ? (
+                  <>
+                    <button
+                      className="btn-confirmar-pagar"
+                      onClick={handleConfirmarOrcamento}
+                      disabled={confirmando}
+                      style={{
+                        background: 'linear-gradient(135deg, #0056D6 0%, #0040A8 100%)',
+                        boxShadow: '0 4px 16px rgba(0, 86, 214, 0.35)',
+                      }}
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                      <span>{confirmando ? 'Confirmando...' : 'Confirmar Orçamento'}</span>
+                    </button>
+
+                    <button className="btn-cancelar-pedido" onClick={handleCancelar}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="15" y1="9" x2="9" y2="15" />
+                        <line x1="9" y1="9" x2="15" y2="15" />
+                      </svg>
+                      <span>Cancelar Pedido</span>
+                    </button>
+
+                    <p className="cancelamento-legenda">
+                      Ao confirmar, o prestador agendará o atendimento e executará o serviço com total garantia Conecta Protege.
+                    </p>
+                  </>
                 ) : (
                   <>
                     <button

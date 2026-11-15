@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom'
 import { chatService, type ConversaResponse, type MensagemItemResponse } from '../features/cliente/services/chatService'
 import { useSession } from '../context/SessionContext'
 import { useToast } from '../core/hooks/useToast'
@@ -7,9 +7,12 @@ import './Mensagens.css'
 
 export default function MensagensPage() {
   const { id } = useParams<{ id?: string }>()
+  const location = useLocation()
   const navigate = useNavigate()
   const toast = useToast()
   const { usuario, perfilAtivo } = useSession()
+
+  const stateContato = location.state as { contatoId?: number; nome?: string; foto?: string } | undefined
 
   const isPrestador = perfilAtivo === 'PRESTADOR'
   const basePath = isPrestador ? '/pro/mensagens' : '/mensagens'
@@ -28,25 +31,104 @@ export default function MensagensPage() {
 
   const chatScrollRef = useRef<HTMLDivElement>(null)
 
-  // 1. Carrega todas as conversas ativas do usuário ao montar ou mudar perfil/id
+  // 1. Carrega todas as conversas ativas do usuário ao montar ou mudar perfil/id/state
   useEffect(() => {
+    const token =
+      localStorage.getItem('conecta.token') ||
+      localStorage.getItem('token') ||
+      localStorage.getItem('conecta_token') ||
+      localStorage.getItem('conecta.jwt')
+
+    if (!token || !usuario?.id) {
+      setConversas([])
+      setLoadingConversas(false)
+      return
+    }
+
     let cancel = false
     setLoadingConversas(true)
     chatService
       .listarConversas(perfilAtivo, usuarioIdNum)
-      .then((data) => {
-        if (!cancel) {
-          setConversas(data)
-          // Se tiver um ID na URL, seleciona essa conversa
-          if (id) {
-            const found = data.find((c) => String(c.conversaId || c.id) === String(id) || String(c.prestadorId) === String(id))
-            if (found) setConversaAtiva(found)
-          } else if (data.length > 0) {
-            // Seleciona a primeira por padrão em telas grandes
-            if (window.innerWidth > 768) {
-              setConversaAtiva(data[0])
+      .then(async (data) => {
+        if (cancel) return
+
+        let lista = Array.isArray(data) ? [...data] : []
+        let conversaSelecionada: ConversaResponse | null = null
+
+        // Se veio contato via state (ex: clique no botão Chat do prestador)
+        if (stateContato?.contatoId || stateContato?.nome) {
+          const foundByState = lista.find((c) =>
+            (stateContato.contatoId && (
+              c.clienteId === stateContato.contatoId ||
+              c.prestadorId === stateContato.contatoId ||
+              String(c.conversaId || c.id) === String(stateContato.contatoId)
+            )) ||
+            (stateContato.nome && c.nome && c.nome.toLowerCase() === stateContato.nome.toLowerCase())
+          )
+
+          if (foundByState) {
+            conversaSelecionada = {
+              ...foundByState,
+              nome: stateContato.nome || foundByState.nome,
+              avatar: stateContato.foto || foundByState.avatar
+            }
+          } else {
+            // Tenta obter ou iniciar a conversa no backend
+            try {
+              const prestadorId = isPrestador ? (usuarioIdNum || 0) : (stateContato.contatoId || 0)
+              const clienteId = isPrestador ? (stateContato.contatoId || 0) : (usuarioIdNum || 0)
+              if (prestadorId > 0 && clienteId > 0) {
+                const resp = await chatService.iniciarConversa({ prestadorId, clienteId })
+                if (resp && (resp.conversaId || resp.id)) {
+                  const convResolvida: ConversaResponse = {
+                    ...resp,
+                    nome: stateContato.nome || resp.nome,
+                    avatar: stateContato.foto || resp.avatar
+                  }
+                  lista = [convResolvida, ...lista]
+                  conversaSelecionada = convResolvida
+                }
+              }
+            } catch {
+              // Em caso de falha de rede/API, sintetiza a conversa localmente
+            }
+
+            if (!conversaSelecionada) {
+              const novaConversa: ConversaResponse = {
+                id: `temp-${stateContato.contatoId || Date.now()}`,
+                conversaId: 0,
+                prestadorId: isPrestador ? (usuarioIdNum || 0) : (stateContato.contatoId || 0),
+                clienteId: isPrestador ? (stateContato.contatoId || 0) : (usuarioIdNum || 0),
+                nome: stateContato.nome || (isPrestador ? 'Cliente' : 'Profissional'),
+                profissao: isPrestador ? 'Cliente Conecta' : 'Prestador Verificado',
+                avatar: stateContato.foto || '',
+                online: true,
+                statusTexto: 'Online agora • Responde rápido',
+                naoLida: false,
+                ultimaMensagem: 'Conversa iniciada',
+                tempo: 'Agora',
+                mensagens: []
+              }
+              lista = [novaConversa, ...lista]
+              conversaSelecionada = novaConversa
             }
           }
+        } else if (id) {
+          const found = lista.find((c) =>
+            String(c.conversaId || c.id) === String(id) ||
+            String(c.prestadorId) === String(id) ||
+            String(c.clienteId) === String(id)
+          )
+          if (found) conversaSelecionada = found
+        } else if (lista.length > 0) {
+          if (window.innerWidth > 768) {
+            conversaSelecionada = lista[0]
+          }
+        }
+
+        setConversas(lista)
+        if (conversaSelecionada) {
+          setConversaAtiva(conversaSelecionada)
         }
       })
       .catch((err) => console.error('Erro ao listar conversas:', err))
@@ -57,7 +139,7 @@ export default function MensagensPage() {
     return () => {
       cancel = true
     }
-  }, [id, perfilAtivo, usuarioIdNum])
+  }, [id, perfilAtivo, usuarioIdNum, stateContato?.contatoId, stateContato?.nome])
 
   // 2. Quando mudar a conversa ativa, faz GET /api/v1/conversas/{id}/mensagens e carrega histórico real
   useEffect(() => {
@@ -67,7 +149,11 @@ export default function MensagensPage() {
     }
 
     const conversaId = conversaAtiva.conversaId || Number(conversaAtiva.id)
-    if (!conversaId) return
+    if (!conversaId || isNaN(conversaId) || conversaId === 0) {
+      setMensagens([])
+      setLoadingMensagens(false)
+      return
+    }
 
     let cancel = false
     setLoadingMensagens(true)
@@ -103,12 +189,24 @@ export default function MensagensPage() {
     if (!novoTexto.trim() || !conversaAtiva || enviando) return
 
     const texto = novoTexto.trim()
-    const conversaId = conversaAtiva.conversaId || Number(conversaAtiva.id)
-    if (!conversaId) return
+    let conversaId = conversaAtiva.conversaId || Number(conversaAtiva.id)
 
     setEnviando(true)
 
     try {
+      if (!conversaId || isNaN(conversaId) || conversaId === 0) {
+        const prestadorId = conversaAtiva.prestadorId || (isPrestador ? (usuarioIdNum || 0) : 0)
+        const clienteId = conversaAtiva.clienteId || (isPrestador ? 0 : (usuarioIdNum || 0))
+        const resp = await chatService.iniciarConversa({ prestadorId, clienteId })
+        conversaId = resp.conversaId || Number(resp.id)
+        setConversaAtiva((prev) => (prev ? { ...prev, conversaId, id: String(conversaId) } : prev))
+        setConversas((prev) =>
+          prev.map((c) =>
+            c.id === conversaAtiva.id ? { ...c, conversaId, id: String(conversaId) } : c
+          )
+        )
+      }
+
       const msgRetornada = await chatService.enviarMensagem(conversaId, {
         texto,
         remetente: isPrestador ? 'prestador' : 'usuario',
@@ -121,7 +219,7 @@ export default function MensagensPage() {
       // Atualiza o snippet da conversa na lista lateral
       setConversas((prev) =>
         prev.map((c) =>
-          c.id === conversaAtiva.id || c.conversaId === conversaAtiva.conversaId
+          c.id === conversaAtiva.id || c.conversaId === conversaId
             ? { ...c, ultimaMensagem: texto, tempo: 'Agora' }
             : c
         )

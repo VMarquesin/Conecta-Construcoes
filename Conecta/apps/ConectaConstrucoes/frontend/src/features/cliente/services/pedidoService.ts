@@ -6,6 +6,8 @@ export interface PedidoResumoResponse {
   prestadorNome: string
   prestadorProfissao: string
   prestadorAvatar: string
+  clienteId?: number
+  clienteNome?: string
   solicitadoEm: string
   status: 'pendente' | 'aceito' | 'concluido' | string
   statusTexto: string
@@ -112,5 +114,27 @@ export const pedidoService = {
     return await http<PedidoDetalheResponse>(`/pedidos/${id}/confirmar${qs}`, {
       method: 'POST',
     })
+  },
+
+  async concluirPedido(id: number, prestadorId?: number): Promise<{ mensagem: string }> {
+    const qs = prestadorId ? `?prestadorId=${prestadorId}` : ''
+    try {
+      return await http<{ mensagem: string }>(`/pedidos/${id}/concluir${qs}`, {
+        method: 'PUT',
+      })
+    } catch {
+      return await http<{ mensagem: string }>(`/solicitacoes/${id}/concluir${qs}`, {
+        method: 'PUT',
+      })
+    }
+  },
+
+  async listarPedidosPrestador(prestadorId?: number, status?: string): Promise<PedidoResumoResponse[]> {
+    const query = new URLSearchParams()
+    if (status) query.append('status', status)
+    if (prestadorId) query.append('prestadorId', prestadorId.toString())
+    const qs = query.toString() ? `?${query.toString()}` : ''
+    const path = prestadorId ? `/pedidos/prestador/${prestadorId}${qs}` : `/pedidos/meus${qs}`
+    return await http<PedidoResumoResponse[]>(path)
   },
 }

@@ -225,4 +225,17 @@ export const proService = {
       body: formData,
     })
   },
+
+  async concluirPedido(id: number, prestadorId?: number): Promise<{ mensagem: string }> {
+    const qs = prestadorId ? `?prestadorId=${prestadorId}` : ''
+    try {
+      return await http<{ mensagem: string }>(`/pedidos/${id}/concluir${qs}`, {
+        method: 'PUT',
+      })
+    } catch (err) {
+      return await http<{ mensagem: string }>(`/solicitacoes/${id}/concluir${qs}`, {
+        method: 'PUT',
+      })
+    }
+  },
 }

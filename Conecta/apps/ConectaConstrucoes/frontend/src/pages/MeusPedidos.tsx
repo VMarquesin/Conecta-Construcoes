@@ -21,8 +21,16 @@ export default function MeusPedidos() {
     setLoading(true)
     pedidoService
       .listarMeusPedidos()
-      .then((data) => setPedidos(data))
-      .catch((err) => console.error('Erro ao listar pedidos:', err))
+      .then((data) => {
+        const unique = Array.isArray(data)
+          ? Array.from(new Map(data.map((item) => [item.id, item])).values())
+          : []
+        setPedidos(unique)
+      })
+      .catch((err) => {
+        console.error('Erro ao listar pedidos:', err)
+        setPedidos([])
+      })
       .finally(() => setLoading(false))
   }
 
@@ -30,24 +38,33 @@ export default function MeusPedidos() {
     carregarPedidos()
   }, [])
 
-  const isCancelado = (p: PedidoResumoResponse) => {
-    const s = (p.status || '').toUpperCase()
-    return s === 'CANCELADO' || s === 'CANCELADA' || s === 'RECUSADO' || s === 'RECUSADA'
-  }
-
-  const isPendente = (p: PedidoResumoResponse) => {
-    const s = (p.status || '').toUpperCase()
-    return (s === 'PENDENTE' || s === 'ABERTA' || s === 'AGUARDANDO_PROPOSTA' || s === 'AGUARDANDO_ACEITE') && !isCancelado(p)
-  }
-
-  const isAceito = (p: PedidoResumoResponse) => {
-    const s = (p.status || '').toUpperCase()
-    return (s === 'ACEITO' || s === 'AGENDADO' || s === 'EM_EXECUCAO' || s === 'ACEITA') && !isCancelado(p)
-  }
-
+  // 1. Concluídos: Exibe pedidos estritamente finalizados (prioridade máxima)
   const isConcluido = (p: PedidoResumoResponse) => {
     const s = (p.status || '').toUpperCase()
-    return (s === 'CONCLUIDO' || s === 'FINALIZADO' || s === 'CONCLUIDA') && !isCancelado(p)
+    return s === 'CONCLUIDA' || s === 'CONCLUIDO' || s === 'FINALIZADO'
+  }
+
+  // 2. Cancelados: Exibe pedidos cancelados ou recusados
+  const isCancelado = (p: PedidoResumoResponse) => {
+    const s = (p.status || '').toUpperCase()
+    return (s === 'CANCELADO' || s === 'CANCELADA' || s === 'RECUSADO' || s === 'RECUSADA') && !isConcluido(p)
+  }
+
+  // 3. Aceitos / Em Andamento: Exibe pedidos em execução ou agendados
+  const isAceito = (p: PedidoResumoResponse) => {
+    const s = (p.status || '').toUpperCase()
+    return (s === 'ACEITA' || s === 'ACEITO' || s === 'EM_ANDAMENTO' || s === 'AGENDADO' || s === 'EM_EXECUCAO') && !isConcluido(p) && !isCancelado(p)
+  }
+
+  const isAguardandoAceite = (p: PedidoResumoResponse) => {
+    const s = (p.status || '').toUpperCase()
+    return (s === 'AGUARDANDO_ACEITE' || s === 'PROPOSTA_RECEBIDA') && !isCancelado(p) && !isConcluido(p) && !isAceito(p)
+  }
+
+  // 4. Pendentes: Exibe pedidos abertos aguardando propostas ou aceite do cliente
+  const isPendente = (p: PedidoResumoResponse) => {
+    const s = (p.status || '').toUpperCase()
+    return (s === 'PENDENTE' || s === 'ABERTA' || s === 'AGUARDANDO_PROPOSTA' || s === 'AGUARDANDO_ACEITE' || s === 'PROPOSTA_RECEBIDA') && !isConcluido(p) && !isCancelado(p) && !isAceito(p)
   }
 
   const numPendentes = pedidos.filter(isPendente).length
@@ -289,7 +306,7 @@ export default function MeusPedidos() {
                           <polyline points="20 6 9 17 4 12" />
                         </svg>
                       )}
-                      <span>{pedido.statusDica}</span>
+                      <span>{isAguardandoAceite(pedido) ? 'Proposta recebida' : (pedido.statusDica || 'Aguardando proposta')}</span>
                     </span>
                   </div>
 
@@ -298,12 +315,39 @@ export default function MeusPedidos() {
                     {isCancelado(pedido) ? (
                       <span className="badge-cancelado-tag">✕ Pedido Cancelado</span>
                     ) : (
-                      <>
-                        {/* Status pendentes: exibe APENAS o botão Cancelar Pedido */}
+                      <div style={{ display: 'flex', gap: '8px', width: '100%', flexWrap: 'wrap' }}>
+                        {/* Se o prestador enviou proposta: botão principal "Ver Proposta / Aceitar" */}
+                        {isAguardandoAceite(pedido) && (
+                          <button
+                            className="btn-detalhes-pedido"
+                            onClick={() => navigate(`/pedidos/${pedido.id}`)}
+                            style={{
+                              flex: 1.2,
+                              background: '#0056D6',
+                              color: '#ffffff',
+                              border: 'none',
+                              boxShadow: '0 4px 12px rgba(0, 86, 214, 0.28)',
+                              fontWeight: 700,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '6px',
+                            }}
+                          >
+                            <span>Ver Proposta / Aceitar</span>
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                              <line x1="5" y1="12" x2="19" y2="12" />
+                              <polyline points="12 5 19 12 12 19" />
+                            </svg>
+                          </button>
+                        )}
+
+                        {/* Status pendentes: botão Cancelar Pedido */}
                         {isPendente(pedido) && (
                           <button
                             className="btn-cancelar-pedido"
                             onClick={() => handleCancelar(pedido)}
+                            style={{ flex: isAguardandoAceite(pedido) ? 1 : undefined }}
                           >
                             Cancelar Pedido
                           </button>
@@ -322,7 +366,7 @@ export default function MeusPedidos() {
                             </svg>
                           </button>
                         )}
-                      </>
+                      </div>
                     )}
                   </div>
                 </article>
@@ -360,7 +404,7 @@ export default function MeusPedidos() {
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3 style={{ margin: 0, fontSize: '20px', fontWeight: 800 }}>Detalhes do Pedido #{pedidoSelecionado.id}</h3>
+                <h3 style={{ margin: 0, fontSize: '20px', fontWeight: 800 }}>Detalhes do Pedido</h3>
                 <button
                   onClick={() => setPedidoSelecionado(null)}
                   style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px' }}

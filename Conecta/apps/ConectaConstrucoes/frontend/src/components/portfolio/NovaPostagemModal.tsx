@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useToast } from '../../core/hooks/useToast'
 import { proService } from '../../features/pro/services/proService'
 import type { PortfolioItemDto } from '../../features/cliente/services/solicitacaoService'
+import { formatarUrlImagem } from '../../core/utils/imageUtils'
 
 interface NovaPostagemModalProps {
   aberto: boolean
@@ -270,7 +271,7 @@ export default function NovaPostagemModal({
                 }}
               >
                 <img
-                  src={previewUrl}
+                  src={formatarUrlImagem(previewUrl)}
                   alt="Pré-visualização"
                   style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                 />

@@ -27,7 +27,9 @@ public enum StatusSolicitacao
     [PgName("RECUSADA")]
     RECUSADA,
     [PgName("CANCELADA")]
-    CANCELADA
+    CANCELADA,
+    [PgName("CONCLUIDA")]
+    CONCLUIDA
 }
 
 public enum StatusProposta

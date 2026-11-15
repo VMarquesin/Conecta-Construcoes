@@ -60,8 +60,14 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isMinimizado, setIsMinimizado] = useState(false)
 
   const carregarConversas = async () => {
-    const token = localStorage.getItem('token') || localStorage.getItem('conecta_token')
-    if (!token) {
+    const token =
+      localStorage.getItem('conecta.token') ||
+      localStorage.getItem('token') ||
+      localStorage.getItem('conecta_token') ||
+      localStorage.getItem('conecta.jwt')
+
+    // Trava de segurança (Guard Clause): só faz a requisição se o token existir e o usuário estiver autenticado
+    if (!token || !usuario?.id) {
       setConversas([])
       return
     }
@@ -108,9 +114,30 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }
 
   useEffect(() => {
+    const token =
+      localStorage.getItem('conecta.token') ||
+      localStorage.getItem('token') ||
+      localStorage.getItem('conecta_token') ||
+      localStorage.getItem('conecta.jwt')
+
+    // Guard Clause no useEffect para evitar polling quando deslogado
+    if (!token || !usuario?.id) {
+      setConversas([])
+      return
+    }
+
+    let isMounted = true
     carregarConversas()
-    const interval = setInterval(carregarConversas, 8000)
-    return () => clearInterval(interval)
+    const interval = setInterval(() => {
+      if (isMounted) {
+        carregarConversas()
+      }
+    }, 10000)
+
+    return () => {
+      isMounted = false
+      clearInterval(interval)
+    }
   }, [usuario?.id, perfilAtivo])
 
   const toggleDropdown = () => {

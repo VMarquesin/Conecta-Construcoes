@@ -13,10 +13,12 @@ namespace Conecta.API.Controllers;
 public class SolicitacoesController : ControllerBase
 {
     private readonly ISolicitacaoService _solicitacaoService;
+    private readonly IPedidoService _pedidoService;
 
-    public SolicitacoesController(ISolicitacaoService solicitacaoService)
+    public SolicitacoesController(ISolicitacaoService solicitacaoService, IPedidoService pedidoService)
     {
         _solicitacaoService = solicitacaoService;
+        _pedidoService = pedidoService;
     }
 
     /// <summary>
@@ -194,6 +196,46 @@ public class SolicitacoesController : ControllerBase
         {
             await _solicitacaoService.AceitarSolicitacaoAsync(idFinal, id);
             return Ok(new { mensagem = $"Solicitação #{id} confirmada com sucesso." });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { mensagem = ex.Message });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { mensagem = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Marca uma solicitação/serviço como concluído pelo prestador.
+    /// </summary>
+    [HttpPut("{id:int}/concluir")]
+    [HttpPost("{id:int}/concluir")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Concluir(int id, [FromQuery] int? prestadorId = null)
+    {
+        var claimId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value;
+        int idFinal = 0;
+        if (int.TryParse(claimId, out var parsedId))
+            idFinal = parsedId;
+        else if (prestadorId.HasValue && prestadorId.Value > 0)
+            idFinal = prestadorId.Value;
+
+        if (idFinal == 0)
+        {
+            return Unauthorized(new { mensagem = "Prestador não autenticado." });
+        }
+
+        try
+        {
+            await _pedidoService.ConcluirPedidoAsync(idFinal, id);
+            return Ok(new { mensagem = $"Serviço #{id} marcado como concluído com sucesso." });
         }
         catch (KeyNotFoundException ex)
         {

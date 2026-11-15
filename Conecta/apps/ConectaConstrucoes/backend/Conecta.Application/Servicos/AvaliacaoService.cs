@@ -49,32 +49,42 @@ public class AvaliacaoService : IAvaliacaoService
             throw new ArgumentException("PrestadorId ou PedidoId deve ser informado.");
         }
 
-        // Validação 1: Apenas clientes com pelo menos um Pedido com Status == StatusPedido.CONCLUIDO com aquele prestador específico podem avaliar. Retorne 403 Forbidden caso não cumpra.
+        // Validação 1: Apenas clientes com pelo menos um Pedido com Status == StatusPedido.CONCLUIDO com aquele prestador específico podem avaliar.
         var pedidosCliente = await _pedidoRepository.ListarPorUsuarioAsync(clienteId, "CONCLUIDO");
         var pedidosConcluidosPrestador = pedidosCliente
             .Where(p => p.ClienteId == clienteId && p.PrestadorId == prestadorId && p.Status == StatusPedido.CONCLUIDO)
             .ToList();
 
-        if (!pedidosConcluidosPrestador.Any())
+        var qtdPedidosConcluidos = pedidosConcluidosPrestador.Count;
+        if (qtdPedidosConcluidos == 0)
         {
             throw new UnauthorizedAccessException("Apenas clientes com pelo menos um pedido concluído com este prestador podem avaliá-lo.");
         }
 
-        // Se pedido não veio explícito, usa o pedido concluído mais recente
+        // Validação 2: Regra de avaliações múltiplas para clientes recorrentes:
+        // O cliente pode avaliar se a quantidade total de avaliações que ele já fez for MENOR que a quantidade total de pedidos concluídos.
+        var avaliacoesDoPrestador = (await _avaliacaoRepository.ListarPorPrestadorAsync(prestadorId)).ToList();
+        var avaliacoesDoCliente = avaliacoesDoPrestador.Where(a => a.ClienteId == clienteId).ToList();
+        var qtdAvaliacoesCliente = avaliacoesDoCliente.Count;
+
+        if (qtdAvaliacoesCliente >= qtdPedidosConcluidos)
+        {
+            throw new UnauthorizedAccessException("Você precisa de um novo serviço concluído para avaliar novamente.");
+        }
+
+        // Se pedido não veio explícito, seleciona o pedido concluído que ainda não foi avaliado
         if (pedido == null)
         {
-            pedido = pedidosConcluidosPrestador.OrderByDescending(p => p.DataConclusao ?? p.CriadoEm).First();
+            var pedidosAvaliadosIds = avaliacoesDoCliente.Select(a => a.PedidoId).ToHashSet();
+            pedido = pedidosConcluidosPrestador
+                .Where(p => !pedidosAvaliadosIds.Contains(p.Id))
+                .OrderByDescending(p => p.DataConclusao ?? p.CriadoEm)
+                .FirstOrDefault()
+                ?? pedidosConcluidosPrestador.OrderByDescending(p => p.DataConclusao ?? p.CriadoEm).First();
         }
         else if (pedido.Status != StatusPedido.CONCLUIDO)
         {
             throw new UnauthorizedAccessException("Não é possível avaliar um pedido que ainda não foi concluído.");
-        }
-
-        // Validação 2: Limite de uma (1) avaliação por cliente para o mesmo prestador. Se já existir, retorne 409 Conflict.
-        var avaliacaoExistente = await _avaliacaoRepository.ObterPorClienteEPrestadorAsync(clienteId, prestadorId);
-        if (avaliacaoExistente != null)
-        {
-            throw new InvalidOperationException("Você já avaliou este prestador de serviços. É permitida apenas uma avaliação por cliente.");
         }
 
         var cliente = await _usuarioRepository.ObterPorIdAsync(clienteId);

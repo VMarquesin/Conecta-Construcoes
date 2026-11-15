@@ -563,15 +563,13 @@ export default function PrestadorPerfil() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-3 gap-1 md:gap-4 instagram-portfolio-grid">
-                    {portfolioItens.map((trab) => {
-                      const itemRawImg = (trab as any).imagemUrl || trab.imagem || (trab as any).url || ''
-                      const apiUrl = import.meta.env.VITE_API_URL || ''
-                      const srcImagem = itemRawImg.startsWith('http')
-                        ? itemRawImg
-                        : `${apiUrl}${itemRawImg.startsWith('/') ? itemRawImg : `/${itemRawImg}`}`
+                    {portfolioItens.map((item) => {
+                      const imagemUrl = item.imagemUrl || (item as any).imagem || (item as any).url || ''
+                      const itemNormalizado = { ...item, imagemUrl }
+                      const srcImagem = formatarUrlImagem(itemNormalizado.imagemUrl)
 
                       return (
-                        <article key={trab.id} className="instagram-portfolio-item">
+                        <article key={item.id} className="instagram-portfolio-item">
                           {isOwner && (
                             <div className="portfolio-item-owner-actions" onClick={(e) => e.stopPropagation()}>
                               <button
@@ -580,7 +578,7 @@ export default function PrestadorPerfil() {
                                 title="Editar publicação"
                                 onClick={(e) => {
                                   e.stopPropagation()
-                                  handleEditarPortfolio(trab)
+                                  handleEditarPortfolio(itemNormalizado)
                                 }}
                               >
                                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -595,7 +593,7 @@ export default function PrestadorPerfil() {
                                 title="Excluir do portfólio"
                                 onClick={(e) => {
                                   e.stopPropagation()
-                                  handleDeletarPortfolio(trab.id, trab.titulo)
+                                  handleDeletarPortfolio(item.id, item.titulo)
                                 }}
                               >
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -611,7 +609,7 @@ export default function PrestadorPerfil() {
                           <div className="aspect-square object-cover w-full h-full instagram-img-container">
                             <img
                               src={srcImagem}
-                              alt={trab.titulo}
+                              alt={itemNormalizado.titulo}
                               className="aspect-square object-cover w-full h-full instagram-img"
                               loading="lazy"
                               onError={(e) => {
@@ -620,9 +618,9 @@ export default function PrestadorPerfil() {
                               }}
                             />
                             <div className="instagram-overlay">
-                              <span className="instagram-overlay-title">{trab.titulo}</span>
-                              {trab.subtitulo && (
-                                <span className="instagram-overlay-sub">{trab.subtitulo}</span>
+                              <span className="instagram-overlay-title">{itemNormalizado.titulo}</span>
+                              {itemNormalizado.subtitulo && (
+                                <span className="instagram-overlay-sub">{itemNormalizado.subtitulo}</span>
                               )}
                             </div>
                           </div>

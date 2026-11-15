@@ -43,6 +43,8 @@ public class SolicitacaoRepository : ISolicitacaoRepository
     {
         return await _context.Solicitacoes
             .Include(s => s.Imagens)
+            .Include(s => s.Propostas)
+                .ThenInclude(p => p.Itens)
             .Include(s => s.Prestador)
                 .ThenInclude(p => p.Usuario)
             .AsNoTracking()
@@ -55,6 +57,8 @@ public class SolicitacaoRepository : ISolicitacaoRepository
     {
         return await _context.Solicitacoes
             .Include(s => s.Imagens)
+            .Include(s => s.Propostas)
+                .ThenInclude(p => p.Itens)
             .Include(s => s.Cliente)
                 .ThenInclude(c => c.Usuario)
             .AsNoTracking()
@@ -67,6 +71,8 @@ public class SolicitacaoRepository : ISolicitacaoRepository
     {
         return await _context.Solicitacoes
             .Include(s => s.Imagens)
+            .Include(s => s.Propostas)
+                .ThenInclude(p => p.Itens)
             .Include(s => s.Cliente)
                 .ThenInclude(c => c.Usuario)
             .AsNoTracking()

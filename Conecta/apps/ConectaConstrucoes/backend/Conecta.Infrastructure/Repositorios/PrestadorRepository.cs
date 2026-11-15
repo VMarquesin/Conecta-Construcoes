@@ -222,8 +222,9 @@ public class PrestadorRepository : IPrestadorRepository
 
     public async Task<decimal> ObterGanhosConcluidosAsync(int prestadorId, DateTime desde)
     {
+        // Regra de negócio: soma os valores APENAS se o status for ESTRITAMENTE CONCLUIDO (pedidos ACEITO/EM_ANDAMENTO não compõem receita)
         return await _context.Pedidos
-            .Where(p => p.PrestadorId == prestadorId && p.Status == StatusPedido.CONCLUIDO && p.ConcluidoEm >= desde)
+            .Where(p => p.PrestadorId == prestadorId && p.Status == StatusPedido.CONCLUIDO && (p.ConcluidoEm >= desde || (p.ConcluidoEm == null && p.AtualizadoEm >= desde)))
             .SumAsync(p => p.ValorFinal ?? p.ValorCombinado ?? 0);
     }
 

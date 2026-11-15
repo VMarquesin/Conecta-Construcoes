@@ -108,20 +108,21 @@ public class PrestadorService : IPrestadorService
         var isFavorited = clienteIdLogado.HasValue &&
                           await _prestadorRepository.IsFavoritadoAsync(clienteIdLogado.Value, prestadorId);
 
-        // Regra de Negócio: podeAvaliar se o cliente tiver pelo menos 1 pedido concluído e ainda não avaliou
+        // Regra de Negócio: podeAvaliar se a quantidade de avaliações que o cliente já fez for MENOR que a quantidade de pedidos CONCLUIDO com este prestador
         bool podeAvaliar = false;
         if (clienteIdLogado.HasValue && clienteIdLogado.Value > 0)
         {
             var pedidosCliente = await _pedidoRepository.ListarPorUsuarioAsync(clienteIdLogado.Value, "CONCLUIDO");
-            var temPedidoConcluido = pedidosCliente.Any(p =>
+            var qtdPedidosConcluidos = pedidosCliente.Count(p =>
                 p.ClienteId == clienteIdLogado.Value &&
                 p.PrestadorId == prestadorId &&
                 p.Status == StatusPedido.CONCLUIDO);
 
-            if (temPedidoConcluido)
+            if (qtdPedidosConcluidos > 0)
             {
-                var jaAvaliou = await _avaliacaoRepository.ObterPorClienteEPrestadorAsync(clienteIdLogado.Value, prestadorId);
-                podeAvaliar = (jaAvaliou == null);
+                var avaliacoesDoPrestador = await _avaliacaoRepository.ListarPorPrestadorAsync(prestadorId);
+                var qtdAvaliacoesCliente = avaliacoesDoPrestador.Count(a => a.ClienteId == clienteIdLogado.Value);
+                podeAvaliar = qtdAvaliacoesCliente < qtdPedidosConcluidos;
             }
         }
 

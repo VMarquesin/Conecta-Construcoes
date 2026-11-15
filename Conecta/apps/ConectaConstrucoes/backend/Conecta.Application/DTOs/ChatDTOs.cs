@@ -27,7 +27,8 @@ public record ConversaResumoResponse(
     string UltimaMensagem,
     string Tempo,
     string? PedidoNumero,
-    List<MensagemItemResponse> Mensagens
+    List<MensagemItemResponse> Mensagens,
+    int? ClienteId = null
 );
 
 public record EnviarMensagemRequest(
@@ -40,5 +41,6 @@ public record EnviarMensagemRequest(
 
 public record IniciarConversaRequest(
     [Required] int PrestadorId,
-    int? PedidoId = null
+    int? PedidoId = null,
+    int? ClienteId = null
 );
