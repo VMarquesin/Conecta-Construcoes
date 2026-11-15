@@ -167,7 +167,8 @@ public class ChatService : IChatService
             ImagemLegenda: legenda ?? (anexo != null ? "anexo_foto.jpg" : null),
             Hora: hora,
             Status: m.Lida ? "Lido" : "Entregue",
-            IsProposta: false
+            IsProposta: false,
+            RemetenteId: m.RemetenteId
         );
     }
 

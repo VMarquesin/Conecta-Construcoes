@@ -1,12 +1,14 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useChat } from '../../context/ChatContext'
+import { useSession } from '../../context/SessionContext'
 import { useToast } from '../../core/hooks/useToast'
 import './FloatingChatBox.css'
 
 export default function FloatingChatBox() {
   const navigate = useNavigate()
   const toast = useToast()
+  const { usuario, perfilAtivo } = useSession()
   const {
     chatJanelaAtiva,
     isMinimizado,
@@ -166,7 +168,13 @@ export default function FloatingChatBox() {
         </div>
 
         {chatJanelaAtiva.mensagens.map((msg) => {
-          if (msg.remetente === 'usuario') {
+          const isMinhaMsg = msg.remetenteId
+            ? String(msg.remetenteId) === String(usuario?.id)
+            : perfilAtivo === 'PRESTADOR'
+            ? msg.remetente === 'prestador'
+            : msg.remetente === 'usuario'
+
+          if (isMinhaMsg) {
             return (
               <div key={msg.id} className="docked-msg-row docked-msg-user">
                 <div className="docked-bubble-user">

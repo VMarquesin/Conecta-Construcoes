@@ -7,12 +7,12 @@ import PedidoDetalhe from '../pages/PedidoDetalhe'
 import ChatPedido from '../pages/ChatPedido'
 import ProDashboard from '../pages/pro/ProDashboard'
 import ProAnaliseSolicitacao from '../pages/pro/ProAnaliseSolicitacao'
-import ProPortfolio from '../pages/pro/ProPortfolio'
 import Login from '../pages/Login'
 import CadastroClientePage from '../features/cliente/pages/CadastroClientePage'
 import RequirePerfil from '../components/session/RequirePerfil'
 import { PERFIL_INFO, useSession } from '../context/SessionContext'
 import ClientLayout from '../core/layout/ClientLayout'
+import ProLayout from '../core/layout/ProLayout'
 import MensagensPage from '../pages/Mensagens'
 import AdminLayout from '../core/layout/AdminLayout'
 import AdminDashboard from '../pages/admin/AdminDashboard'
@@ -54,11 +54,16 @@ export default function AppRoutes() {
 
       {/* ===== Perfil PRESTADOR (Conecta PRO) ===== */}
       <Route element={<RequirePerfil perfil="PRESTADOR" />}>
-        <Route path="/pro" element={<ProDashboard />} />
-        <Route path="/pro/dashboard" element={<ProDashboard />} />
-        <Route path="/pro/solicitacao/:id" element={<ProAnaliseSolicitacao />} />
-        <Route path="/pro/pedidos/:id/analisar" element={<ProAnaliseSolicitacao />} />
-        <Route path="/pro/portfolio" element={<ProPortfolio />} />
+        <Route element={<ProLayout />}>
+          <Route path="/pro" element={<ProDashboard />} />
+          <Route path="/pro/dashboard" element={<ProDashboard />} />
+          <Route path="/pro/solicitacao/:id" element={<ProAnaliseSolicitacao />} />
+          <Route path="/pro/pedidos/:id/analisar" element={<ProAnaliseSolicitacao />} />
+          <Route path="/pro/portfolio" element={<PrestadorPerfil />} />
+          <Route path="/pro/portfolio/:id" element={<PrestadorPerfil />} />
+          <Route path="/pro/mensagens/:id" element={<MensagensPage />} />
+          <Route path="/pro/mensagens" element={<MensagensPage />} />
+        </Route>
       </Route>
 
       {/* ===== Perfil ADMIN ===== */}

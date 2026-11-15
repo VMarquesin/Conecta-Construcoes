@@ -1,9 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { chatService, type ConversaResponse } from '../features/cliente/services/chatService'
+import { useSession } from './SessionContext'
 
 export interface MensagemItem {
   id: string
   remetente: 'usuario' | 'prestador'
+  remetenteId?: number
   texto?: string
   imagemUrl?: string
   imagemLegenda?: string
@@ -50,6 +52,7 @@ interface ChatContextType {
 const ChatContext = createContext<ChatContextType | undefined>(undefined)
 
 export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { usuario, perfilAtivo } = useSession()
   const [conversas, setConversas] = useState<Conversa[]>([])
   const [loading, setLoading] = useState(false)
   const [dropdownAberto, setDropdownAberto] = useState(false)
@@ -65,7 +68,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     try {
       setLoading(true)
-      const data: ConversaResponse[] = await chatService.listarConversas()
+      const usuarioIdNum = usuario?.id && !isNaN(Number(usuario.id)) ? Number(usuario.id) : undefined
+      const data: ConversaResponse[] = await chatService.listarConversas(perfilAtivo || undefined, usuarioIdNum)
       if (Array.isArray(data) && data.length > 0) {
         const mapeadas: Conversa[] = data.map((c) => ({
           id: String(c.conversaId || c.id),
@@ -83,6 +87,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
           mensagens: (c.mensagens || []).map((m) => ({
             id: String(m.id),
             remetente: m.remetente,
+            remetenteId: m.remetenteId,
             texto: m.texto,
             imagemUrl: m.imagemUrl,
             imagemLegenda: m.imagemLegenda,
@@ -104,7 +109,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     carregarConversas()
-  }, [])
+    const interval = setInterval(carregarConversas, 8000)
+    return () => clearInterval(interval)
+  }, [usuario?.id, perfilAtivo])
 
   const toggleDropdown = () => {
     setDropdownAberto((prev) => {
@@ -306,10 +313,13 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const now = new Date()
     const hora = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    const usuarioIdNum = usuario?.id && !isNaN(Number(usuario.id)) ? Number(usuario.id) : undefined
+    const remetenteTipo = perfilAtivo === 'PRESTADOR' ? 'prestador' : 'usuario'
 
     const novaMsg: MensagemItem = {
       id: Date.now().toString(),
-      remetente: 'usuario',
+      remetente: remetenteTipo,
+      remetenteId: usuarioIdNum,
       texto: texto.trim(),
       hora,
       status: 'Enviando...',
@@ -344,7 +354,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const idNumerico = Number(conversaId)
     if (!isNaN(idNumerico) && idNumerico > 0) {
       try {
-        const resp = await chatService.enviarMensagem(idNumerico, { texto: texto.trim() })
+        const resp = await chatService.enviarMensagem(idNumerico, { texto: texto.trim() }, usuarioIdNum)
         const statusReal = resp.status || 'Entregue'
         const idReal = resp.id ? String(resp.id) : novaMsg.id
 

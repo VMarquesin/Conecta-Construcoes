@@ -3,6 +3,7 @@ import { http } from '../../../core/api/http'
 export interface MensagemItemResponse {
   id: string
   remetente: 'usuario' | 'prestador'
+  remetenteId?: number
   texto?: string
   imagemUrl?: string
   imagemLegenda?: string
@@ -15,6 +16,8 @@ export interface EnviarMensagemRequest {
   texto?: string
   imagemUrl?: string
   imagemLegenda?: string
+  remetente?: string
+  remetenteId?: number
 }
 
 export interface ConversaResponse {
@@ -34,8 +37,13 @@ export interface ConversaResponse {
 }
 
 export const chatService = {
-  async listarConversas(): Promise<ConversaResponse[]> {
+  async listarConversas(perfil?: string | null, usuarioId?: number): Promise<ConversaResponse[]> {
     try {
+      if (perfil === 'PRESTADOR' && usuarioId) {
+        return await http<ConversaResponse[]>(`/conversas/prestador/${usuarioId}`)
+      } else if (perfil === 'CLIENTE' && usuarioId) {
+        return await http<ConversaResponse[]>(`/conversas/cliente/${usuarioId}`)
+      }
       return await http<ConversaResponse[]>('/conversas')
     } catch {
       return []

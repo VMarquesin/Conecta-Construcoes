@@ -83,15 +83,31 @@ public class PedidosController : ControllerBase
     /// Aceita uma proposta comercial formal e formaliza o pedido (Requisito CON_017 - Status evolui para AGUARDANDO_ACEITE).
     /// </summary>
     [HttpPost("propostas/{propostaId:int}/aceitar")]
+    [HttpPost("propostas/{propostaId:int}/confirmar")]
     [HttpPost("{id:int}/aceitar-proposta")]
+    [HttpPost("{id:int}/confirmar")]
+    [HttpPost("{id:int}/aceitar")]
     [Authorize]
     [ProducesResponseType(typeof(PedidoDetalheResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> AceitarProposta(int? propostaId, int? id)
+    public async Task<IActionResult> AceitarProposta(
+        int? propostaId,
+        int? id,
+        [FromQuery] int? prestadorId = null,
+        [FromQuery] int? clienteId = null)
     {
-        var claimId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (!int.TryParse(claimId, out var clienteId))
+        var claimId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value;
+        int usuarioId = 0;
+        if (int.TryParse(claimId, out var parsedId))
+            usuarioId = parsedId;
+        else if (prestadorId.HasValue && prestadorId.Value > 0)
+            usuarioId = prestadorId.Value;
+        else if (clienteId.HasValue && clienteId.Value > 0)
+            usuarioId = clienteId.Value;
+
+        if (usuarioId == 0)
         {
             return Unauthorized(new { mensagem = "Usuário não autenticado." });
         }
@@ -99,7 +115,7 @@ public class PedidosController : ControllerBase
         var propId = propostaId ?? id ?? 0;
         try
         {
-            var pedido = await _pedidoService.AceitarPropostaECriarPedidoAsync(clienteId, propId);
+            var pedido = await _pedidoService.AceitarPropostaECriarPedidoAsync(usuarioId, propId);
             return Ok(pedido);
         }
         catch (KeyNotFoundException ex)

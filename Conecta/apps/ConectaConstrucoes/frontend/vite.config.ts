@@ -35,6 +35,10 @@ export default defineConfig(({ mode }) => {
           target: 'http://localhost:5000',
           changeOrigin: true,
         },
+        '/uploads': {
+          target: 'http://localhost:5000',
+          changeOrigin: true,
+        },
       },
     },
   }

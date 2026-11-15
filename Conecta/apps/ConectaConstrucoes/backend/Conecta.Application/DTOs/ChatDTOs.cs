@@ -10,7 +10,8 @@ public record MensagemItemResponse(
     string? ImagemLegenda,
     string Hora,
     string? Status,
-    bool IsProposta = false
+    bool IsProposta = false,
+    int? RemetenteId = null
 );
 
 public record ConversaResumoResponse(

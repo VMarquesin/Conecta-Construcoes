@@ -7,7 +7,9 @@ public interface ISolicitacaoService
     Task<SolicitacaoResponse> CriarAsync(int clienteId, CriarSolicitacaoRequest request);
     Task<SolicitacaoResponse?> ObterPorIdAsync(int solicitacaoId);
     Task<IEnumerable<SolicitacaoResponse>> ListarPorClienteAsync(int clienteId);
+    Task<IEnumerable<SolicitacaoResponse>> ListarPorPrestadorAsync(int prestadorId);
     Task<PropostaResponse> EnviarPropostaAsync(int prestadorId, int solicitacaoId, EnviarPropostaRequest request);
+    Task AceitarSolicitacaoAsync(int usuarioId, int solicitacaoId);
     Task RecusarSolicitacaoAsync(int prestadorId, int solicitacaoId);
     Task CancelarSolicitacaoAsync(int clienteId, int solicitacaoId);
 }

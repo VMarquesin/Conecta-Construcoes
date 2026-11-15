@@ -160,4 +160,47 @@ public class PrestadoresController : ControllerBase
         await _proService.RemoverItemPortfolioAsync(idFinal, id);
         return Ok(new { mensagem = "Item de portfólio removido com sucesso." });
     }
+
+    /// <summary>
+    /// Obtém o perfil completo do prestador logado (para edição no painel PRO).
+    /// </summary>
+    [HttpGet("perfil")]
+    [Authorize]
+    [ProducesResponseType(typeof(PrestadorPerfilDetalhadoResponse), StatusCodes.Status200OK)]
+    public async Task<IActionResult> ObterMeuPerfil([FromQuery] int? prestadorId = null)
+    {
+        var claimId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+            ?? User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value;
+        int idFinal = 0;
+        if (int.TryParse(claimId, out var parsedId))
+            idFinal = parsedId;
+        else if (prestadorId.HasValue && prestadorId.Value > 0)
+            idFinal = prestadorId.Value;
+
+        if (idFinal == 0) return Unauthorized(new { mensagem = "Prestador não autenticado." });
+        var perfil = await _prestadorService.ObterPerfilDetalhadoAsync(idFinal, idFinal);
+        if (perfil == null) return NotFound(new { mensagem = "Perfil de prestador não encontrado." });
+        return Ok(perfil);
+    }
+
+    /// <summary>
+    /// Atualiza as informações comerciais e bio do prestador logado (Requisito CON_019).
+    /// </summary>
+    [HttpPut("perfil")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> AtualizarPerfil([FromBody] AtualizarPerfilPrestadorRequest request, [FromQuery] int? prestadorId = null)
+    {
+        var claimId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+            ?? User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value;
+        int idFinal = 0;
+        if (int.TryParse(claimId, out var parsedId))
+            idFinal = parsedId;
+        else if (prestadorId.HasValue && prestadorId.Value > 0)
+            idFinal = prestadorId.Value;
+
+        if (idFinal == 0) return Unauthorized(new { mensagem = "Prestador não autenticado." });
+        await _prestadorService.AtualizarPerfilAsync(idFinal, request);
+        return Ok(new { mensagem = "Perfil do prestador atualizado com sucesso." });
+    }
 }

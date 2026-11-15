@@ -91,6 +91,7 @@ public interface IPrestadorRepository
     Task<PrestadorEstatisticas?> ObterEstatisticasAsync(int prestadorId);
     Task<Portfolio> AdicionarPortfolioAsync(Portfolio portfolio);
     Task RemoverPortfolioAsync(int prestadorId, int portfolioId);
+    Task AtualizarPerfilAsync(int usuarioId, decimal? valorHora, int? experienciaAnos, int? raioAtendimentoKm, string? bio, string? nomeFantasia = null);
 }
 
 public record PrestadorEstatisticas(

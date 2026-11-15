@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import HeaderChatButton from '../../components/chat/HeaderChatButton'
 import AccountTrigger from '../../components/session/AccountTrigger'
 import { useChat } from '../../context/ChatContext'
 import { useToast } from '../../core/hooks/useToast'
@@ -15,7 +14,6 @@ export default function ProDashboard() {
   const [loading, setLoading] = useState(true)
   const [nome, setNome] = useState('Profissional')
   const [profissao, setProfissao] = useState('Prestador de Serviços')
-  const [avatar, setAvatar] = useState('')
   const [disponivel, setDisponivel] = useState(true)
   const [cidade, setCidade] = useState('Tupã')
   const [raioAtendimentoKm, setRaioAtendimentoKm] = useState(15)
@@ -37,7 +35,6 @@ export default function ProDashboard() {
       if (dashboard) {
         setNome(dashboard.nome || 'Profissional')
         setProfissao(dashboard.profissao || 'Prestador de Serviços')
-        if (dashboard.avatar) setAvatar(dashboard.avatar)
         setDisponivel(dashboard.disponivel)
         setCidade(dashboard.cidade || 'Tupã')
         setRaioAtendimentoKm(dashboard.raioAtendimentoKm || 15)
@@ -111,53 +108,6 @@ export default function ProDashboard() {
 
   return (
     <div className="pro-viewport">
-      {/* Header Superior Conecta PRO - Full width */}
-      <header className="pro-header">
-        <div className="pro-header-inner">
-          <Link to="/pro" className="pro-brand">
-            <div className="pro-brand-logo">
-              <span>C</span>
-            </div>
-            <div className="pro-brand-title-wrap">
-              <span className="pro-brand-name">Conecta</span>
-              <span className="pro-badge-tag">PRO</span>
-            </div>
-          </Link>
-
-          {/* Menu Desktop do Prestador */}
-          <nav className="pro-desktop-nav">
-            <Link to="/pro" className="pro-nav-link active">Painel Pro</Link>
-            <Link to={pedidosPendentes.length > 0 ? `/pro/solicitacao/${pedidosPendentes[0].id}` : '/pro'} className="pro-nav-link">Solicitações</Link>
-            <Link to="/pro/portfolio" className="pro-nav-link">Meu Portfólio</Link>
-          </nav>
-
-          <div className="pro-header-actions">
-            <HeaderChatButton />
-
-            <button className="pro-header-icon-btn" title="Notificações" aria-label="Notificações">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-              </svg>
-              <span className="pro-badge-dot" />
-            </button>
-
-            <AccountTrigger className="pro-avatar-btn" title="Minha conta">
-              {avatar ? (
-                <img src={avatar} alt={nome} className="pro-avatar-img-header" />
-              ) : (
-                <div className="pro-avatar-img-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0056D6', color: '#fff', borderRadius: '50%' }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-                    <circle cx="12" cy="7" r="4" />
-                  </svg>
-                </div>
-              )}
-            </AccountTrigger>
-          </div>
-        </div>
-      </header>
-
       <div className="pro-container">
         {loading ? (
           <div style={{ padding: '60px 20px', textAlign: 'center', color: '#64748b' }}>

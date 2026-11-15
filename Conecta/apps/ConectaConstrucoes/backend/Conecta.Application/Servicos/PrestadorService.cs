@@ -199,6 +199,18 @@ public class PrestadorService : IPrestadorService
         return true;
     }
 
+    public async Task AtualizarPerfilAsync(int prestadorId, AtualizarPerfilPrestadorRequest request)
+    {
+        await _prestadorRepository.AtualizarPerfilAsync(
+            prestadorId,
+            request.ValorHora,
+            request.ExperienciaAnos,
+            request.RaioAtendimentoKm,
+            request.Bio,
+            request.NomeFantasia
+        );
+    }
+
     private static string ExtrairIniciais(string nome)
     {
         if (string.IsNullOrWhiteSpace(nome)) return "CO";

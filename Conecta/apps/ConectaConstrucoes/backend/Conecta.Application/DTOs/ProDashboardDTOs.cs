@@ -64,3 +64,20 @@ public record CriarItemPortfolioRequest(
     string? Detalhe = "Recente",
     [Required] string ImagemUrl = ""
 );
+
+public record AtualizarPerfilPrestadorRequest(
+    decimal? ValorHora,
+    int? ExperienciaAnos,
+    int? RaioAtendimentoKm,
+    string? Bio,
+    string? NomeFantasia = null
+);
+
+public record UploadPortfolioResponse(
+    int Id,
+    string Url,
+    string ImagemUrl,
+    string? Titulo,
+    string? Detalhe,
+    int PrestadorId
+);

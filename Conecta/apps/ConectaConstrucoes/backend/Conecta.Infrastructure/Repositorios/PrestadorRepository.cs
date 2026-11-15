@@ -285,4 +285,19 @@ public class PrestadorRepository : IPrestadorRepository
             await _context.SaveChangesAsync();
         }
     }
+
+    public async Task AtualizarPerfilAsync(int usuarioId, decimal? valorHora, int? experienciaAnos, int? raioAtendimentoKm, string? bio, string? nomeFantasia = null)
+    {
+        var prestador = await _context.Prestadores.FindAsync(usuarioId);
+        if (prestador != null)
+        {
+            if (valorHora.HasValue) prestador.ValorHoraInicial = valorHora.Value;
+            if (experienciaAnos.HasValue) prestador.ExperienciaAnos = experienciaAnos.Value;
+            if (raioAtendimentoKm.HasValue) prestador.RaioAtendimentoKm = raioAtendimentoKm.Value;
+            if (bio != null) prestador.Bio = bio.Trim();
+            if (!string.IsNullOrWhiteSpace(nomeFantasia)) prestador.NomeFantasia = nomeFantasia.Trim();
+            prestador.AtualizadoEm = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+        }
+    }
 }

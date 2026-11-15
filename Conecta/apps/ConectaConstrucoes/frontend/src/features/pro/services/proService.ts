@@ -1,4 +1,22 @@
 import { http } from '../../../core/api/http'
+import type { PrestadorPerfilDetalhadoResponse } from '../../cliente/services/solicitacaoService'
+
+export interface AtualizarPerfilRequest {
+  valorHora?: number
+  experienciaAnos?: number
+  raioAtendimentoKm?: number
+  bio?: string
+  nomeFantasia?: string
+}
+
+export interface UploadPortfolioResponse {
+  id: number
+  url: string
+  imagemUrl: string
+  titulo?: string
+  detalhe?: string
+  prestadorId: number
+}
 
 export interface ProMetricasSemanaDto {
   pedidosAguardando: number
@@ -174,7 +192,7 @@ export const proService = {
 
   async removerFotoPortfolio(id: number, prestadorId?: number): Promise<void> {
     const qs = prestadorId ? `?prestadorId=${prestadorId}` : ''
-    await http<void>(`/prestadores/portfolio/${id}${qs}`, {
+    await http<void>(`/portfolio/${id}${qs}`, {
       method: 'DELETE',
     })
   },
@@ -184,6 +202,27 @@ export const proService = {
     await http<void>(`/pro/bio${qs}`, {
       method: 'PUT',
       body: JSON.stringify({ bio }),
+    })
+  },
+
+  async obterPerfilPrestador(prestadorId?: number): Promise<PrestadorPerfilDetalhadoResponse> {
+    const qs = prestadorId ? `?prestadorId=${prestadorId}` : ''
+    return await http<PrestadorPerfilDetalhadoResponse>(`/prestadores/perfil${qs}`)
+  },
+
+  async atualizarPerfil(dados: AtualizarPerfilRequest, prestadorId?: number): Promise<{ mensagem: string }> {
+    const qs = prestadorId ? `?prestadorId=${prestadorId}` : ''
+    return await http<{ mensagem: string }>(`/prestadores/perfil${qs}`, {
+      method: 'PUT',
+      body: JSON.stringify(dados),
+    })
+  },
+
+  async uploadFotoPortfolio(formData: FormData, prestadorId?: number): Promise<UploadPortfolioResponse> {
+    const qs = prestadorId ? `?queryPrestadorId=${prestadorId}` : ''
+    return await http<UploadPortfolioResponse>(`/portfolio/upload${qs}`, {
+      method: 'POST',
+      body: formData,
     })
   },
 }

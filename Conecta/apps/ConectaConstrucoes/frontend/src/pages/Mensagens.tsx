@@ -1,11 +1,19 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { chatService, type ConversaResponse, type MensagemItemResponse } from '../features/cliente/services/chatService'
+import { useSession } from '../context/SessionContext'
+import { useToast } from '../core/hooks/useToast'
 import './Mensagens.css'
 
 export default function MensagensPage() {
   const { id } = useParams<{ id?: string }>()
   const navigate = useNavigate()
+  const toast = useToast()
+  const { usuario, perfilAtivo } = useSession()
+
+  const isPrestador = perfilAtivo === 'PRESTADOR'
+  const basePath = isPrestador ? '/pro/mensagens' : '/mensagens'
+  const usuarioIdNum = usuario ? (typeof usuario.id === 'string' ? parseInt(usuario.id, 10) : usuario.id) : undefined
 
   const [conversas, setConversas] = useState<ConversaResponse[]>([])
   const [loadingConversas, setLoadingConversas] = useState(true)
@@ -20,12 +28,12 @@ export default function MensagensPage() {
 
   const chatScrollRef = useRef<HTMLDivElement>(null)
 
-  // 1. Carrega todas as conversas ativas do usuário ao montar
+  // 1. Carrega todas as conversas ativas do usuário ao montar ou mudar perfil/id
   useEffect(() => {
     let cancel = false
     setLoadingConversas(true)
     chatService
-      .listarConversas()
+      .listarConversas(perfilAtivo, usuarioIdNum)
       .then((data) => {
         if (!cancel) {
           setConversas(data)
@@ -49,7 +57,7 @@ export default function MensagensPage() {
     return () => {
       cancel = true
     }
-  }, [id])
+  }, [id, perfilAtivo, usuarioIdNum])
 
   // 2. Quando mudar a conversa ativa, faz GET /api/v1/conversas/{id}/mensagens e carrega histórico real
   useEffect(() => {
@@ -101,7 +109,11 @@ export default function MensagensPage() {
     setEnviando(true)
 
     try {
-      const msgRetornada = await chatService.enviarMensagem(conversaId, { texto })
+      const msgRetornada = await chatService.enviarMensagem(conversaId, {
+        texto,
+        remetente: isPrestador ? 'prestador' : 'usuario',
+        remetenteId: usuarioIdNum
+      })
       // Sucesso garantido da API
       setMensagens((prev) => [...prev, msgRetornada])
       setNovoTexto('')
@@ -116,7 +128,7 @@ export default function MensagensPage() {
       )
     } catch (err: any) {
       console.error('Erro ao enviar mensagem:', err)
-      alert(err.message || 'Erro ao enviar a mensagem para o prestador.')
+      toast.error(err.message || 'Erro ao enviar a mensagem.')
     } finally {
       setEnviando(false)
     }
@@ -164,7 +176,9 @@ export default function MensagensPage() {
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
               </svg>
               <h4 style={{ margin: '0 0 4px', color: '#1e293b' }}>Nenhuma conversa</h4>
-              <p style={{ fontSize: '13px', margin: 0 }}>Suas mensagens com profissionais aparecerão aqui.</p>
+              <p style={{ fontSize: '13px', margin: 0 }}>
+                Suas mensagens com {isPrestador ? 'clientes' : 'profissionais'} aparecerão aqui.
+              </p>
             </div>
           ) : (
             conversasFiltradas.map((conv) => {
@@ -178,7 +192,7 @@ export default function MensagensPage() {
                   className={`conversa-item ${isSelected ? 'active' : ''}`}
                   onClick={() => {
                     setConversaAtiva(conv)
-                    navigate(`/mensagens/${conv.conversaId || conv.id}`, { replace: true })
+                    navigate(`${basePath}/${conv.conversaId || conv.id}`, { replace: true })
                   }}
                 >
                   <div className="conversa-avatar-wrap">
@@ -186,7 +200,7 @@ export default function MensagensPage() {
                       <img src={conv.avatar} alt={conv.nome} className="conversa-avatar" />
                     ) : (
                       <div className="conversa-avatar-placeholder">
-                        {conv.nome ? conv.nome[0].toUpperCase() : 'P'}
+                        {conv.nome ? conv.nome[0].toUpperCase() : isPrestador ? 'C' : 'P'}
                       </div>
                     )}
                     {conv.online && <span className="conversa-online-dot" title="Online" />}
@@ -194,7 +208,7 @@ export default function MensagensPage() {
 
                   <div className="conversa-info">
                     <div className="conversa-top-row">
-                      <span className="conversa-name">{conv.nome || 'Profissional'}</span>
+                      <span className="conversa-name">{conv.nome || (isPrestador ? 'Cliente' : 'Profissional')}</span>
                       <span className="conversa-time">{conv.tempo}</span>
                     </div>
                     <div className="conversa-sub-row">
@@ -236,7 +250,7 @@ export default function MensagensPage() {
                     <img src={conversaAtiva.avatar} alt={conversaAtiva.nome} className="conversa-avatar" />
                   ) : (
                     <div className="conversa-avatar-placeholder">
-                      {conversaAtiva.nome ? conversaAtiva.nome[0].toUpperCase() : 'P'}
+                      {conversaAtiva.nome ? conversaAtiva.nome[0].toUpperCase() : isPrestador ? 'C' : 'P'}
                     </div>
                   )}
                   {conversaAtiva.online && <span className="conversa-online-dot" />}
@@ -245,26 +259,32 @@ export default function MensagensPage() {
                 <div>
                   <div className="chat-panel-prof-name">
                     <span>{conversaAtiva.nome}</span>
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="#0056D6">
-                      <circle cx="12" cy="12" r="10" />
-                      <path d="M8 12l2.5 2.5L16 9" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
+                    {!isPrestador && (
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="#0056D6">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M8 12l2.5 2.5L16 9" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    )}
                   </div>
-                  <p className="chat-panel-prof-role">{conversaAtiva.profissao || 'Prestador Verificado'}</p>
+                  <p className="chat-panel-prof-role">
+                    {conversaAtiva.profissao || (isPrestador ? 'Cliente' : 'Prestador Verificado')}
+                  </p>
                 </div>
               </div>
 
               <div className="chat-panel-header-actions">
-                <Link
-                  to={`/prestador/${conversaAtiva.prestadorId}`}
-                  className="chat-panel-btn"
-                  title="Ver perfil completo do profissional"
-                >
-                  Ver Perfil
-                </Link>
+                {!isPrestador && conversaAtiva.prestadorId && (
+                  <Link
+                    to={`/prestador/${conversaAtiva.prestadorId}`}
+                    className="chat-panel-btn"
+                    title="Ver perfil completo do profissional"
+                  >
+                    Ver Perfil
+                  </Link>
+                )}
                 {conversaAtiva.pedidoNumero && (
                   <Link
-                    to={`/pedidos/${conversaAtiva.pedidoNumero}`}
+                    to={isPrestador ? '/pro' : `/pedidos/${conversaAtiva.pedidoNumero}`}
                     className="chat-panel-btn"
                     style={{ background: '#f8fafc', color: '#334155', borderColor: '#e2e8f0' }}
                   >
@@ -283,15 +303,28 @@ export default function MensagensPage() {
               ) : mensagens.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '60px 20px', color: '#64748b' }}>
                   <p>Nenhuma mensagem trocada ainda.</p>
-                  <p style={{ fontSize: '13px' }}>Diga olá para {conversaAtiva.nome} e tire dúvidas sobre o serviço!</p>
+                  <p style={{ fontSize: '13px' }}>
+                    Diga olá para {conversaAtiva.nome} e tire dúvidas sobre o serviço!
+                  </p>
                 </div>
               ) : (
-                mensagens.map((m) => (
-                  <div key={m.id} className={`msg-bubble ${m.remetente}`}>
-                    {m.texto && <div>{m.texto}</div>}
-                    {m.hora && <span className="msg-time">{m.hora}</span>}
-                  </div>
-                ))
+                mensagens.map((m) => {
+                  const isMinhaMensagem = m.remetenteId
+                    ? String(m.remetenteId) === String(usuario?.id)
+                    : isPrestador
+                    ? m.remetente === 'prestador'
+                    : m.remetente === 'usuario'
+
+                  return (
+                    <div
+                      key={m.id}
+                      className={`msg-bubble ${isMinhaMensagem ? 'usuario' : 'prestador'}`}
+                    >
+                      {m.texto && <div>{m.texto}</div>}
+                      {m.hora && <span className="msg-time">{m.hora}</span>}
+                    </div>
+                  )
+                })
               )}
               <div ref={chatScrollRef} />
             </div>
@@ -326,7 +359,7 @@ export default function MensagensPage() {
             </svg>
             <h3 style={{ margin: '0 0 8px', color: '#1e293b' }}>Suas Conversas</h3>
             <p style={{ maxWidth: '360px', margin: 0, fontSize: '14px', lineHeight: '1.5' }}>
-              Selecione uma conversa ao lado para ver o histórico de mensagens e negociar orçamentos diretamente com o prestador.
+              Selecione uma conversa ao lado para ver o histórico de mensagens e negociar orçamentos diretamente {isPrestador ? 'com o cliente' : 'com o prestador'}.
             </p>
           </div>
         )}

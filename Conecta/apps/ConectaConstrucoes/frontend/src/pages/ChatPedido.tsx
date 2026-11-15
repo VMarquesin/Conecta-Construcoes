@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useToast } from '../core/hooks/useToast'
+import { useSession } from '../context/SessionContext'
 import { chatService, type MensagemItemResponse } from '../features/cliente/services/chatService'
 import { pedidoService } from '../features/cliente/services/pedidoService'
 import './ChatPedido.css'
@@ -8,8 +9,11 @@ import './ChatPedido.css'
 export default function ChatPedido() {
   const navigate = useNavigate()
   const toast = useToast()
+  const { usuario, perfilAtivo } = useSession()
   const { id } = useParams<{ id?: string }>()
   const pedidoNumero = id || '1'
+
+  const usuarioIdNum = usuario ? (typeof usuario.id === 'string' ? parseInt(usuario.id, 10) : usuario.id) : undefined
 
   const [mensagens, setMensagens] = useState<MensagemItemResponse[]>([])
   const [loading, setLoading] = useState(true)
@@ -60,7 +64,11 @@ export default function ChatPedido() {
     setEnviando(true)
 
     try {
-      const msgCriada = await chatService.enviarMensagem(Number(pedidoNumero), { texto })
+      const msgCriada = await chatService.enviarMensagem(Number(pedidoNumero), {
+        texto,
+        remetente: perfilAtivo === 'PRESTADOR' ? 'prestador' : 'usuario',
+        remetenteId: usuarioIdNum
+      })
       setMensagens((prev) => [...prev, msgCriada])
     } catch (err: any) {
       console.error('Erro ao enviar mensagem:', err)
@@ -213,7 +221,13 @@ export default function ChatPedido() {
             </div>
           ) : (
             mensagens.map((msg) => {
-              if (msg.remetente === 'usuario') {
+              const isMinhaMsg = msg.remetenteId
+                ? String(msg.remetenteId) === String(usuario?.id)
+                : perfilAtivo === 'PRESTADOR'
+                ? msg.remetente === 'prestador'
+                : msg.remetente === 'usuario'
+
+              if (isMinhaMsg) {
                 return (
                   <div key={msg.id} className="msg-row msg-row-user">
                     <div className="msg-bubble-user">

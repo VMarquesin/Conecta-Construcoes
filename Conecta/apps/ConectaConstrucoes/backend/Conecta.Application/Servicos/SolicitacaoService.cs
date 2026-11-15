@@ -118,6 +118,19 @@ public class SolicitacaoService : ISolicitacaoService
         );
     }
 
+    public async Task AceitarSolicitacaoAsync(int usuarioId, int solicitacaoId)
+    {
+        var solicitacao = await _solicitacaoRepository.ObterPorIdAsync(solicitacaoId)
+            ?? throw new KeyNotFoundException($"Solicitação #{solicitacaoId} não encontrada.");
+
+        if (solicitacao.ClienteId != usuarioId && solicitacao.PrestadorId != usuarioId)
+        {
+            throw new UnauthorizedAccessException("Você não tem permissão para confirmar esta solicitação.");
+        }
+
+        await _solicitacaoRepository.AtualizarStatusAsync(solicitacaoId, "ACEITA");
+    }
+
     public async Task RecusarSolicitacaoAsync(int prestadorId, int solicitacaoId)
     {
         var solicitacao = await _solicitacaoRepository.ObterPorIdAsync(solicitacaoId)
@@ -129,6 +142,12 @@ public class SolicitacaoService : ISolicitacaoService
         }
 
         await _solicitacaoRepository.AtualizarStatusAsync(solicitacaoId, "RECUSADA");
+    }
+
+    public async Task<IEnumerable<SolicitacaoResponse>> ListarPorPrestadorAsync(int prestadorId)
+    {
+        var lista = await _solicitacaoRepository.ListarPorPrestadorAsync(prestadorId);
+        return lista.Select(MapearParaResponse);
     }
 
     public async Task CancelarSolicitacaoAsync(int clienteId, int solicitacaoId)

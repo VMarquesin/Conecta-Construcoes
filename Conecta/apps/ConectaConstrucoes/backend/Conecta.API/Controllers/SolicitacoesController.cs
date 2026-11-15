@@ -85,6 +85,30 @@ public class SolicitacoesController : ControllerBase
     }
 
     /// <summary>
+    /// Lista todas as solicitações recebidas pelo prestador (ABERTA, CANCELADA, etc.).
+    /// </summary>
+    [HttpGet("prestador/{prestadorId:int}")]
+    [HttpGet("prestador")]
+    [Authorize]
+    [ProducesResponseType(typeof(IEnumerable<SolicitacaoResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> ListarPorPrestador(int? prestadorId = null)
+    {
+        var claimId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value;
+        int idFinal = 0;
+        if (int.TryParse(claimId, out var parsedId))
+            idFinal = parsedId;
+        else if (prestadorId.HasValue && prestadorId.Value > 0)
+            idFinal = prestadorId.Value;
+
+        if (idFinal == 0)
+            return Unauthorized(new { mensagem = "Usuário não autenticado." });
+
+        var lista = await _solicitacaoService.ListarPorPrestadorAsync(idFinal);
+        return Ok(lista);
+    }
+
+    /// <summary>
     /// Obtém detalhes de uma solicitação de serviço pelo ID.
     /// </summary>
     [HttpGet("{id:int}")]
@@ -128,6 +152,48 @@ public class SolicitacoesController : ControllerBase
         {
             var proposta = await _solicitacaoService.EnviarPropostaAsync(idFinal, id, request);
             return CreatedAtAction(nameof(ObterPorId), new { id }, proposta);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { mensagem = ex.Message });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { mensagem = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Confirma ou aceita uma solicitação de serviço/orçamento (Permite acesso para Cliente e Prestador).
+    /// </summary>
+    [HttpPost("{id:int}/confirmar")]
+    [HttpPost("{id:int}/aceitar")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Confirmar(int id, [FromQuery] int? prestadorId = null, [FromQuery] int? clienteId = null)
+    {
+        var claimId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value;
+        int idFinal = 0;
+        if (int.TryParse(claimId, out var parsedId))
+            idFinal = parsedId;
+        else if (prestadorId.HasValue && prestadorId.Value > 0)
+            idFinal = prestadorId.Value;
+        else if (clienteId.HasValue && clienteId.Value > 0)
+            idFinal = clienteId.Value;
+
+        if (idFinal == 0)
+        {
+            return Unauthorized(new { mensagem = "Usuário não autenticado." });
+        }
+
+        try
+        {
+            await _solicitacaoService.AceitarSolicitacaoAsync(idFinal, id);
+            return Ok(new { mensagem = $"Solicitação #{id} confirmada com sucesso." });
         }
         catch (KeyNotFoundException ex)
         {

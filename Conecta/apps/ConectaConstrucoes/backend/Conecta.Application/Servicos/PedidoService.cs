@@ -224,14 +224,14 @@ public class PedidoService : IPedidoService
         );
     }
 
-    public async Task<PedidoDetalheResponse> AceitarPropostaECriarPedidoAsync(int clienteId, int propostaId)
+    public async Task<PedidoDetalheResponse> AceitarPropostaECriarPedidoAsync(int usuarioId, int propostaId)
     {
         var proposta = await _solicitacaoRepository.ObterPropostaPorIdAsync(propostaId)
             ?? throw new KeyNotFoundException($"Proposta #{propostaId} não encontrada.");
 
-        if (proposta.Solicitacao.ClienteId != clienteId)
+        if (proposta.Solicitacao.ClienteId != usuarioId && proposta.PrestadorId != usuarioId)
         {
-            throw new UnauthorizedAccessException("Apenas o cliente solicitante pode aceitar a proposta comercial.");
+            throw new UnauthorizedAccessException("Apenas o cliente solicitante ou o prestador responsável podem aceitar/confirmar a proposta comercial.");
         }
 
         // Atualiza proposta e solicitacao
@@ -241,7 +241,7 @@ public class PedidoService : IPedidoService
         // Cria o pedido com status AGUARDANDO_ACEITE (Requisito CON_017)
         var pedido = new Pedido
         {
-            ClienteId = clienteId,
+            ClienteId = proposta.Solicitacao.ClienteId,
             PrestadorId = proposta.PrestadorId,
             PropostaId = proposta.Id,
             EnderecoAtendimento = proposta.Solicitacao.EnderecoAtendimento,
@@ -253,7 +253,7 @@ public class PedidoService : IPedidoService
         };
 
         var criado = await _pedidoRepository.AdicionarAsync(pedido);
-        var detalhe = await ObterDetalhesAsync(criado.Id, clienteId);
+        var detalhe = await ObterDetalhesAsync(criado.Id, usuarioId);
         return detalhe!;
     }
 

@@ -63,6 +63,18 @@ public class SolicitacaoRepository : ISolicitacaoRepository
             .ToListAsync();
     }
 
+    public async Task<IEnumerable<Solicitacao>> ListarPorPrestadorAsync(int prestadorId)
+    {
+        return await _context.Solicitacoes
+            .Include(s => s.Imagens)
+            .Include(s => s.Cliente)
+                .ThenInclude(c => c.Usuario)
+            .AsNoTracking()
+            .Where(s => s.PrestadorId == prestadorId)
+            .OrderByDescending(s => s.CriadoEm)
+            .ToListAsync();
+    }
+
     public async Task AtualizarStatusAsync(int solicitacaoId, string novoStatus)
     {
         var s = await _context.Solicitacoes.FindAsync(solicitacaoId);

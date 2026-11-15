@@ -5,6 +5,7 @@ export interface PortfolioItemDto {
   titulo: string
   subtitulo?: string
   imagem: string
+  imagemUrl?: string
 }
 
 export interface AvaliacaoItemDto {
@@ -89,6 +90,33 @@ export const solicitacaoService = {
 
   async cancelarSolicitacao(id: number): Promise<{ mensagem: string }> {
     return await http<{ mensagem: string }>(`/solicitacoes/${id}/cancelar`, {
+      method: 'POST',
+    })
+  },
+
+  async listarSolicitacoesPrestador(prestadorId?: number): Promise<SolicitacaoResponse[]> {
+    const qs = prestadorId ? `?prestadorId=${prestadorId}` : ''
+    return await http<SolicitacaoResponse[]>(`/solicitacoes/prestador${qs}`)
+  },
+
+  async aceitarProposta(id: number, prestadorId?: number, clienteId?: number): Promise<{ mensagem: string }> {
+    const query = new URLSearchParams()
+    if (prestadorId) query.append('prestadorId', prestadorId.toString())
+    if (clienteId) query.append('clienteId', clienteId.toString())
+    const qs = query.toString() ? `?${query.toString()}` : ''
+
+    return await http<{ mensagem: string }>(`/solicitacoes/${id}/confirmar${qs}`, {
+      method: 'POST',
+    })
+  },
+
+  async confirmarOrcamento(id: number, prestadorId?: number, clienteId?: number): Promise<{ mensagem: string }> {
+    const query = new URLSearchParams()
+    if (prestadorId) query.append('prestadorId', prestadorId.toString())
+    if (clienteId) query.append('clienteId', clienteId.toString())
+    const qs = query.toString() ? `?${query.toString()}` : ''
+
+    return await http<{ mensagem: string }>(`/solicitacoes/${id}/confirmar${qs}`, {
       method: 'POST',
     })
   },

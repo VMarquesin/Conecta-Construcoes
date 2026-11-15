@@ -33,6 +33,30 @@ public class ConversasController : ControllerBase
     }
 
     /// <summary>
+    /// Lista conversas para o prestador autenticado ou especificado.
+    /// </summary>
+    [HttpGet("prestador/{id:int}")]
+    [ProducesResponseType(typeof(IEnumerable<ConversaResumoResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> ListarConversasPrestador(int id)
+    {
+        var usuarioId = ObterUsuarioId(id);
+        var conversas = await _chatService.ListarConversasDoUsuarioAsync(usuarioId);
+        return Ok(conversas);
+    }
+
+    /// <summary>
+    /// Lista conversas para o cliente autenticado ou especificado.
+    /// </summary>
+    [HttpGet("cliente/{id:int}")]
+    [ProducesResponseType(typeof(IEnumerable<ConversaResumoResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> ListarConversasCliente(int id)
+    {
+        var usuarioId = ObterUsuarioId(id);
+        var conversas = await _chatService.ListarConversasDoUsuarioAsync(usuarioId);
+        return Ok(conversas);
+    }
+
+    /// <summary>
     /// Obtém detalhes de uma conversa específica.
     /// </summary>
     [HttpGet("{id:int}")]

@@ -133,6 +133,18 @@ if (app.Environment.IsDevelopment() || true) // Disponível para visualização 
     });
 }
 
+// Garante que a pasta wwwroot existe para arquivos estáticos (upload de portfólio)
+var wwwrootPath = Path.Combine(app.Environment.ContentRootPath, "wwwroot");
+if (!Directory.Exists(wwwrootPath))
+{
+    Directory.CreateDirectory(wwwrootPath);
+}
+
+// Middleware de arquivos estáticos declarado ANTES de UseRouting para servir wwwroot
+app.UseStaticFiles();
+
+app.UseRouting();
+
 app.UseCors("AllowFrontend");
 
 app.UseAuthentication();

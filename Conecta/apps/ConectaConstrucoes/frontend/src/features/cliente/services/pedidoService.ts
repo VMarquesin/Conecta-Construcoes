@@ -91,4 +91,26 @@ export const pedidoService = {
       body: JSON.stringify({ formaPagamento: metodo, parcelas }),
     })
   },
+
+  async aceitarProposta(id: number, prestadorId?: number, clienteId?: number): Promise<PedidoDetalheResponse> {
+    const query = new URLSearchParams()
+    if (prestadorId) query.append('prestadorId', prestadorId.toString())
+    if (clienteId) query.append('clienteId', clienteId.toString())
+    const qs = query.toString() ? `?${query.toString()}` : ''
+
+    return await http<PedidoDetalheResponse>(`/pedidos/${id}/aceitar-proposta${qs}`, {
+      method: 'POST',
+    })
+  },
+
+  async confirmarPedido(id: number, prestadorId?: number, clienteId?: number): Promise<PedidoDetalheResponse> {
+    const query = new URLSearchParams()
+    if (prestadorId) query.append('prestadorId', prestadorId.toString())
+    if (clienteId) query.append('clienteId', clienteId.toString())
+    const qs = query.toString() ? `?${query.toString()}` : ''
+
+    return await http<PedidoDetalheResponse>(`/pedidos/${id}/confirmar${qs}`, {
+      method: 'POST',
+    })
+  },
 }

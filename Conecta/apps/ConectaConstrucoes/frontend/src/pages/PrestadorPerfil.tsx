@@ -6,11 +6,16 @@ import { useToast } from '../core/hooks/useToast'
 import AccountTrigger from '../components/session/AccountTrigger'
 import { chatService } from '../features/cliente/services/chatService'
 import { avaliacaoService } from '../features/cliente/services/avaliacaoService'
+import { http } from '../core/api/http'
 import {
   solicitacaoService,
   type PrestadorPerfilDetalhadoResponse,
   type AvaliacaoItemDto,
+  type PortfolioItemDto,
 } from '../features/cliente/services/solicitacaoService'
+import { formatarUrlImagem } from '../core/utils/imageUtils'
+import NovaPostagemModal from '../components/portfolio/NovaPostagemModal'
+import EditarPerfilModal from '../components/portfolio/EditarPerfilModal'
 import './PrestadorPerfil.css'
 
 export default function PrestadorPerfil() {
@@ -20,7 +25,7 @@ export default function PrestadorPerfil() {
   const { abrirChat } = useChat()
   const toast = useToast()
   const { id } = useParams<{ id?: string }>()
-  const prestadorId = id && !isNaN(Number(id)) ? Number(id) : 1
+  const prestadorId = id && !isNaN(Number(id)) ? Number(id) : (usuarioIdNum || 1)
 
   const [prestador, setPrestador] = useState<PrestadorPerfilDetalhadoResponse | null>(null)
   const [loading, setLoading] = useState(true)
@@ -29,6 +34,17 @@ export default function PrestadorPerfil() {
   const [isFavorited, setIsFavorited] = useState(false)
   const [copiado, setCopiado] = useState(false)
   const [modalOrcamentoAberto, setModalOrcamentoAberto] = useState(false)
+  const [modalNovaPostagemAberto, setModalNovaPostagemAberto] = useState(false)
+  const [modalEditarPerfilAberto, setModalEditarPerfilAberto] = useState(false)
+  const [itemEmEdicao, setItemEmEdicao] = useState<PortfolioItemDto | null>(null)
+
+  // Permissão: verifica se o usuário logado é o dono do perfil (TAREFA 3)
+  const isOwner = Boolean(
+    usuarioIdNum &&
+    prestador &&
+    (Number(prestador.id) === Number(usuarioIdNum) ||
+      Number((prestador as any).usuarioId) === Number(usuarioIdNum))
+  )
 
   // Form states para solicitação
   const [tituloSolicitacao, setTituloSolicitacao] = useState('Solicitação de Orçamento')
@@ -71,6 +87,32 @@ export default function PrestadorPerfil() {
     navigator.clipboard?.writeText(window.location.href)
     setCopiado(true)
     setTimeout(() => setCopiado(false), 2000)
+  }
+
+  const handleDeletarPortfolio = async (portfolioId: number, titulo?: string) => {
+    if (!window.confirm(`Deseja realmente excluir "${titulo || 'esta publicação'}" do seu portfólio?`)) {
+      return
+    }
+
+    try {
+      await http<void>(`/portfolio/${portfolioId}`, { method: 'DELETE' })
+      setPrestador((prev) => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          portfolio: (prev.portfolio || []).filter((item) => item.id !== portfolioId),
+        }
+      })
+      toast.success('Publicação removida com sucesso.')
+    } catch (err: any) {
+      console.error('Erro ao excluir item do portfólio:', err)
+      toast.error(err.message || 'Erro ao remover publicação do portfólio.')
+    }
+  }
+
+  const handleEditarPortfolio = (item: PortfolioItemDto) => {
+    setItemEmEdicao(item)
+    setModalNovaPostagemAberto(true)
   }
 
   const handleToggleFavorito = async () => {
@@ -233,7 +275,7 @@ export default function PrestadorPerfil() {
               {/* Imagem de Capa com Botões Flutuantes e Avatar Sobreposto */}
               <div className="cover-wrapper">
                 {prestador?.capa ? (
-                  <img src={prestador.capa} alt="Capa do perfil" className="cover-image" />
+                  <img src={formatarUrlImagem(prestador.capa)} alt="Capa do perfil" className="cover-image" />
                 ) : (
                   <div
                     className="cover-image"
@@ -279,16 +321,18 @@ export default function PrestadorPerfil() {
                       </svg>
                     </button>
 
-                    <button
-                      className={`cover-btn ${isFavorited ? 'favorited' : ''}`}
-                      onClick={handleToggleFavorito}
-                      title={isFavorited ? 'Remover dos favoritos' : 'Favoritar'}
-                      aria-label="Favoritar"
-                    >
-                      <svg width="19" height="19" viewBox="0 0 24 24" fill={isFavorited ? '#ef4444' : 'none'} stroke={isFavorited ? '#ef4444' : 'currentColor'} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                      </svg>
-                    </button>
+                    {!isOwner && (
+                      <button
+                        className={`cover-btn ${isFavorited ? 'favorited' : ''}`}
+                        onClick={handleToggleFavorito}
+                        title={isFavorited ? 'Remover dos favoritos' : 'Favoritar'}
+                        aria-label="Favoritar"
+                      >
+                        <svg width="19" height="19" viewBox="0 0 24 24" fill={isFavorited ? '#ef4444' : 'none'} stroke={isFavorited ? '#ef4444' : 'currentColor'} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                        </svg>
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -296,7 +340,7 @@ export default function PrestadorPerfil() {
                 <div className="provider-identity-card">
                   <div className="provider-avatar-circle">
                     {prestador?.avatar ? (
-                      <img src={prestador.avatar} alt={prestador?.nome || 'Profissional'} className="provider-avatar-img" />
+                      <img src={formatarUrlImagem(prestador.avatar)} alt={prestador?.nome || 'Profissional'} className="provider-avatar-img" />
                     ) : (
                       <div
                         className="provider-avatar-img"
@@ -325,12 +369,29 @@ export default function PrestadorPerfil() {
 
               {/* Identidade do Prestador */}
               <div className="provider-header-info">
-                <span className="pill-destaque-regiao">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                  </svg>
-                  {prestador?.seloSuper ? 'Superprestador' : 'Destaque na Região'}
-                </span>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+                  <span className="pill-destaque-regiao">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                    </svg>
+                    {prestador?.seloSuper ? 'Superprestador' : 'Destaque na Região'}
+                  </span>
+
+                  {isOwner && (
+                    <button
+                      type="button"
+                      onClick={() => setModalEditarPerfilAberto(true)}
+                      className="btn-editar-perfil-header"
+                      title="Editar informações comerciais e de apresentação"
+                    >
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                      </svg>
+                      <span>Editar Perfil</span>
+                    </button>
+                  )}
+                </div>
 
                 <h1 className="provider-fullname">{prestador?.nome || 'Profissional'}</h1>
                 <p className="provider-specialty-sub">{prestador?.profissao || 'Prestador de Serviços'}</p>
@@ -343,29 +404,25 @@ export default function PrestadorPerfil() {
                 </div>
               </div>
 
-              {/* Card Investimento Inicial (visível em mobile e desktop) */}
-              <div className="investment-card">
-                <div className="investment-left">
-                  <span className="investment-tag">Investimento Inicial</span>
-                  <span className="investment-val">
-                    {prestador?.valorHora && prestador.valorHora > 0 ? (
-                      <>
-                        A partir de R$ {Number(prestador.valorHora).toFixed(0)}<small>/hora</small>
-                      </>
-                    ) : (
-                      'Orçamento sob medida'
-                    )}
-                  </span>
-                </div>
+              {/* Card Investimento Inicial (visível em mobile e desktop se configurado) */}
+              {prestador?.valorHora && Number(prestador.valorHora) > 0 ? (
+                <div className="investment-card">
+                  <div className="investment-left">
+                    <span className="investment-tag">Investimento Inicial</span>
+                    <span className="investment-val">
+                      A partir de R$ {Number(prestador.valorHora).toFixed(0)}<small>/hora</small>
+                    </span>
+                  </div>
 
-                <div className="investment-free-quote">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="10" />
-                    <path d="m9 12 2 2 4-4" />
-                  </svg>
-                  <span>Orçamento<br />grátis</span>
+                  <div className="investment-free-quote">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10" />
+                      <path d="m9 12 2 2 4-4" />
+                    </svg>
+                    <span>Orçamento<br />grátis</span>
+                  </div>
                 </div>
-              </div>
+              ) : null}
 
               {/* Grid de Métricas / Estatísticas Condicionais */}
               <div className="stats-2x2-grid">
@@ -453,11 +510,27 @@ export default function PrestadorPerfil() {
               {/* Portfólio de Trabalhos (Estilo Instagram) */}
               <section className="section-block">
                 <div className="portfolio-header-row">
-                  <h2 className="section-block-title">Portfólio</h2>
-                  {portfolioItens.length > 0 && (
-                    <span className="portfolio-link-count">
-                      {portfolioItens.length} fotos
-                    </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <h2 className="section-block-title">Portfólio</h2>
+                    {portfolioItens.length > 0 && (
+                      <span className="portfolio-link-count">
+                        {portfolioItens.length} fotos
+                      </span>
+                    )}
+                  </div>
+
+                  {isOwner && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setItemEmEdicao(null)
+                        setModalNovaPostagemAberto(true)
+                      }}
+                      className="btn-nova-postagem-pro"
+                      title="Publicar novo trabalho no portfólio"
+                    >
+                      <span>+ Nova Publicação</span>
+                    </button>
                   )}
                 </div>
 
@@ -470,28 +543,92 @@ export default function PrestadorPerfil() {
                         <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
                       </svg>
                     </div>
-                    <p className="portfolio-empty-text">Este profissional ainda não adicionou fotos ao portfólio.</p>
+                    <p className="portfolio-empty-text">
+                      {isOwner
+                        ? 'Você ainda não adicionou fotos ao seu portfólio.'
+                        : 'Este profissional ainda não adicionou fotos ao portfólio.'}
+                    </p>
+                    {isOwner && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setItemEmEdicao(null)
+                          setModalNovaPostagemAberto(true)
+                        }}
+                        className="btn-publicar-primeira-foto"
+                      >
+                        + Nova Publicação
+                      </button>
+                    )}
                   </div>
                 ) : (
                   <div className="grid grid-cols-3 gap-1 md:gap-4 instagram-portfolio-grid">
-                    {portfolioItens.map((trab) => (
-                      <article key={trab.id} className="instagram-portfolio-item">
-                        <div className="aspect-square object-cover w-full h-full instagram-img-container">
-                          <img
-                            src={trab.imagem}
-                            alt={trab.titulo}
-                            className="aspect-square object-cover w-full h-full instagram-img"
-                            loading="lazy"
-                          />
-                          <div className="instagram-overlay">
-                            <span className="instagram-overlay-title">{trab.titulo}</span>
-                            {trab.subtitulo && (
-                              <span className="instagram-overlay-sub">{trab.subtitulo}</span>
-                            )}
+                    {portfolioItens.map((trab) => {
+                      const itemRawImg = (trab as any).imagemUrl || trab.imagem || (trab as any).url || ''
+                      const apiUrl = import.meta.env.VITE_API_URL || ''
+                      const srcImagem = itemRawImg.startsWith('http')
+                        ? itemRawImg
+                        : `${apiUrl}${itemRawImg.startsWith('/') ? itemRawImg : `/${itemRawImg}`}`
+
+                      return (
+                        <article key={trab.id} className="instagram-portfolio-item">
+                          {isOwner && (
+                            <div className="portfolio-item-owner-actions" onClick={(e) => e.stopPropagation()}>
+                              <button
+                                type="button"
+                                className="btn-card-portfolio-edit"
+                                title="Editar publicação"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleEditarPortfolio(trab)
+                                }}
+                              >
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                </svg>
+                                <span>Editar</span>
+                              </button>
+                              <button
+                                type="button"
+                                className="btn-card-portfolio-delete"
+                                title="Excluir do portfólio"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleDeletarPortfolio(trab.id, trab.titulo)
+                                }}
+                              >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                  <polyline points="3 6 5 6 21 6" />
+                                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                  <line x1="10" y1="11" x2="10" y2="17" />
+                                  <line x1="14" y1="11" x2="14" y2="17" />
+                                </svg>
+                              </button>
+                            </div>
+                          )}
+
+                          <div className="aspect-square object-cover w-full h-full instagram-img-container">
+                            <img
+                              src={srcImagem}
+                              alt={trab.titulo}
+                              className="aspect-square object-cover w-full h-full instagram-img"
+                              loading="lazy"
+                              onError={(e) => {
+                                // Se a imagem física falhar ou não estiver disponível
+                                e.currentTarget.style.opacity = '0.7'
+                              }}
+                            />
+                            <div className="instagram-overlay">
+                              <span className="instagram-overlay-title">{trab.titulo}</span>
+                              {trab.subtitulo && (
+                                <span className="instagram-overlay-sub">{trab.subtitulo}</span>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      </article>
-                    ))}
+                        </article>
+                      )
+                    })}
                   </div>
                 )}
               </section>
@@ -685,23 +822,19 @@ export default function PrestadorPerfil() {
 
             {/* Coluna Direita (Sidebar Desktop com Ações de Contratação Fixas) */}
             <aside className="desktop-sticky-sidebar">
-              <div className="investment-card" style={{ margin: 0 }}>
-                <div className="investment-left">
-                  <span className="investment-tag">Investimento Estimado</span>
-                  <span className="investment-val">
-                    {prestador?.valorHora && prestador.valorHora > 0 ? (
-                      <>
-                        A partir de R$ {Number(prestador.valorHora).toFixed(0)}<small>/hora</small>
-                      </>
-                    ) : (
-                      'Orçamento sob medida'
-                    )}
-                  </span>
+              {prestador?.valorHora && Number(prestador.valorHora) > 0 ? (
+                <div className="investment-card" style={{ margin: 0 }}>
+                  <div className="investment-left">
+                    <span className="investment-tag">Investimento Estimado</span>
+                    <span className="investment-val">
+                      A partir de R$ {Number(prestador.valorHora).toFixed(0)}<small>/hora</small>
+                    </span>
+                  </div>
+                  <div className="investment-free-quote">
+                    <span>Orçamento<br />sem custo</span>
+                  </div>
                 </div>
-                <div className="investment-free-quote">
-                  <span>Orçamento<br />sem custo</span>
-                </div>
-              </div>
+              ) : null}
 
               <div className="perfil-protege-banner" style={{ margin: 0 }}>
                 <div className="protege-shield-icon">
@@ -719,30 +852,59 @@ export default function PrestadorPerfil() {
                 </div>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <button
-                  className="cta-submit-btn"
-                  style={{ width: '100%', height: '52px' }}
-                  onClick={() => setModalOrcamentoAberto(true)}
-                >
-                  <span>Solicitar Orçamento</span>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                    <polyline points="12 5 19 12 12 19" />
-                  </svg>
-                </button>
+              {isOwner ? (
+                <div style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '16px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#22c55e' }} />
+                    <span style={{ fontSize: '13px', fontWeight: 800, color: '#0f172a' }}>Gestão Conecta PRO</span>
+                  </div>
+                  <p style={{ margin: 0, fontSize: '12px', color: '#64748b', lineHeight: '1.4' }}>
+                    Esta é a sua vitrine pública no estilo Instagram. Gerencie suas fotos e dados comerciais diretamente aqui.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setModalEditarPerfilAberto(true)}
+                    className="btn-sidebar-pro-edit"
+                  >
+                    Editar Informações Comerciais
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setItemEmEdicao(null)
+                      setModalNovaPostagemAberto(true)
+                    }}
+                    className="btn-sidebar-pro-post"
+                  >
+                    + Nova Publicação
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <button
+                    className="cta-submit-btn"
+                    style={{ width: '100%', height: '52px' }}
+                    onClick={() => setModalOrcamentoAberto(true)}
+                  >
+                    <span>Solicitar Orçamento</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                      <polyline points="12 5 19 12 12 19" />
+                    </svg>
+                  </button>
 
-                <button
-                  className="cta-chat-btn"
-                  style={{ width: '100%', height: '48px', borderRadius: '14px', gap: '8px' }}
-                  onClick={() => abrirChat(prestador?.id || prestadorId)}
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                  </svg>
-                  <span style={{ fontWeight: 700, fontSize: '14px' }}>Conversar via Chat</span>
-                </button>
-              </div>
+                  <button
+                    className="cta-chat-btn"
+                    style={{ width: '100%', height: '48px', borderRadius: '14px', gap: '8px' }}
+                    onClick={() => abrirChat(prestador?.id || prestadorId)}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                    </svg>
+                    <span style={{ fontWeight: 700, fontSize: '14px' }}>Conversar via Chat</span>
+                  </button>
+                </div>
+              )}
             </aside>
           </main>
         )}
@@ -902,44 +1064,130 @@ export default function PrestadorPerfil() {
         {/* Sticky Action Bar (Mobile View) */}
         <div className="perfil-cta-bottom-bar">
           <div className="cta-bar-inner">
-            <div className="cta-price-col">
-              <span className="cta-price-hint">Estimativa</span>
-              <span className="cta-price-amount">
-                {prestador?.valorHora && prestador.valorHora > 0 ? (
-                  <>
-                    R$ {Number(prestador.valorHora).toFixed(0)}
-                    <small style={{ fontSize: '12px', color: '#64748b' }}>/hora</small>
-                  </>
-                ) : (
-                  'Sob medida'
-                )}
-              </span>
-            </div>
+            {isOwner ? (
+              <div className="cta-buttons-row" style={{ width: '100%', display: 'flex', gap: '8px' }}>
+                <button
+                  type="button"
+                  className="cta-submit-btn"
+                  style={{ flex: 1, backgroundColor: '#f1f5f9', color: '#1e293b', border: '1px solid #cbd5e1' }}
+                  onClick={() => setModalEditarPerfilAberto(true)}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                  </svg>
+                  <span>Editar Perfil</span>
+                </button>
+                <button
+                  type="button"
+                  className="cta-submit-btn"
+                  style={{ flex: 1 }}
+                  onClick={() => {
+                    setItemEmEdicao(null)
+                    setModalNovaPostagemAberto(true)
+                  }}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19" />
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                  </svg>
+                  <span>Nova Publicação</span>
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="cta-price-col">
+                  <span className="cta-price-hint">Estimativa</span>
+                  <span className="cta-price-amount">
+                    {prestador?.valorHora && prestador.valorHora > 0 ? (
+                      <>
+                        R$ {Number(prestador.valorHora).toFixed(0)}
+                        <small style={{ fontSize: '12px', color: '#64748b' }}>/hora</small>
+                      </>
+                    ) : (
+                      'Sob medida'
+                    )}
+                  </span>
+                </div>
 
-            <div className="cta-buttons-row">
-              <button
-                className="cta-chat-btn"
-                title="Conversar"
-                onClick={() => abrirChat(prestador?.id || prestadorId)}
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                </svg>
-              </button>
+                <div className="cta-buttons-row">
+                  <button
+                    className="cta-chat-btn"
+                    title="Conversar"
+                    onClick={() => abrirChat(prestador?.id || prestadorId)}
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                    </svg>
+                  </button>
 
-              <button
-                className="cta-submit-btn"
-                onClick={() => setModalOrcamentoAberto(true)}
-              >
-                <span>Solicitar Orçamento</span>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="5" y1="12" x2="19" y2="12" />
-                  <polyline points="12 5 19 12 12 19" />
-                </svg>
-              </button>
-            </div>
+                  <button
+                    className="cta-submit-btn"
+                    onClick={() => setModalOrcamentoAberto(true)}
+                  >
+                    <span>Solicitar Orçamento</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                      <polyline points="12 5 19 12 12 19" />
+                    </svg>
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
+
+        {/* Modais de Gestão PRO (Owner) */}
+        {isOwner && (
+          <>
+            <NovaPostagemModal
+              aberto={modalNovaPostagemAberto}
+              onClose={() => {
+                setModalNovaPostagemAberto(false)
+                setItemEmEdicao(null)
+              }}
+              prestadorId={prestador?.id || prestadorId}
+              itemEmEdicao={itemEmEdicao}
+              onPublicado={(novaFoto) => {
+                setPrestador((prev) => {
+                  if (!prev) return prev
+                  return {
+                    ...prev,
+                    portfolio: [novaFoto, ...(prev.portfolio || [])]
+                  }
+                })
+              }}
+              onAtualizado={(fotoAtualizada) => {
+                setPrestador((prev) => {
+                  if (!prev) return prev
+                  return {
+                    ...prev,
+                    portfolio: (prev.portfolio || []).map((p) =>
+                      p.id === fotoAtualizada.id ? fotoAtualizada : p
+                    ),
+                  }
+                })
+              }}
+            />
+
+            {prestador && (
+              <EditarPerfilModal
+                aberto={modalEditarPerfilAberto}
+                onClose={() => setModalEditarPerfilAberto(false)}
+                prestador={prestador}
+                onPerfilAtualizado={(dados) => {
+                  setPrestador((prev) => {
+                    if (!prev) return prev
+                    return {
+                      ...prev,
+                      ...dados
+                    }
+                  })
+                }}
+              />
+            )}
+          </>
+        )}
 
         {/* Barra de Navegação Inferior (Mobile Viewport) */}
         <nav className="home-bottom-nav">
