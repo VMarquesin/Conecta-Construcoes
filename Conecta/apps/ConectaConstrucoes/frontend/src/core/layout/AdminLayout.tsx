@@ -1,6 +1,9 @@
 import { useState } from 'react'
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { Icon, type IconName } from '../components/Icon'
+import HeaderChatButton from '../../components/chat/HeaderChatButton'
+import { useSession } from '../../context/SessionContext'
+import AccountTrigger from '../../components/session/AccountTrigger'
 
 const nav: { to: string; label: string; icon: IconName; end?: boolean }[] = [
   { to: '/admin', label: 'Dashboard', icon: 'dashboard', end: true },
@@ -11,6 +14,8 @@ const nav: { to: string; label: string; icon: IconName; end?: boolean }[] = [
 
 export default function AdminLayout() {
   const [open, setOpen] = useState(false)
+  const { usuario, sair } = useSession()
+  const navigate = useNavigate()
   return (
     <div className="shell">
       <aside className={`sidebar${open ? ' open' : ''}`}>
@@ -22,7 +27,7 @@ export default function AdminLayout() {
             </NavLink>
           ))}
         </nav>
-        <button type="button" className="sidebar-foot"><Icon name="logout" /> Sair</button>
+        <button type="button" className="sidebar-foot" onClick={() => { sair(); navigate('/login', { replace: true }) }}><Icon name="logout" /> Sair</button>
       </aside>
       {open && <div className="scrim" onClick={() => setOpen(false)} />}
 
@@ -31,8 +36,9 @@ export default function AdminLayout() {
           <button type="button" className="icon-btn menu-btn" onClick={() => setOpen(true)} aria-label="Abrir menu"><Icon name="menu" size={22} /></button>
           <span className="topbar-title">Painel Administrativo</span>
           <div className="topbar-right">
+            <HeaderChatButton />
             <button type="button" className="icon-btn" aria-label="Notificações"><Icon name="bell" /></button>
-            <span className="avatar" title="Administrador">AD</span>
+            <AccountTrigger className="avatar" title="Minha conta">{usuario?.nome.split(' ').slice(0, 2).map((p) => p[0]).join('').toUpperCase() ?? 'AD'}</AccountTrigger>
           </div>
         </header>
         <main className="content"><Outlet /></main>

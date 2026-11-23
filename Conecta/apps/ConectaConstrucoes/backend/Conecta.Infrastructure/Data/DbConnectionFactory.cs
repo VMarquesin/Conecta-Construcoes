@@ -10,16 +10,15 @@ namespace Conecta.Infrastructure.Data;
 /// </summary>
 public class DbConnectionFactory : IDbConnectionFactory
 {
-    private readonly string _connectionString;
+    private readonly NpgsqlDataSource _dataSource;
 
-    public DbConnectionFactory(IConfiguration configuration)
+    public DbConnectionFactory(NpgsqlDataSource dataSource)
     {
-        _connectionString = configuration.GetConnectionString("DefaultConnection")
-            ?? throw new InvalidOperationException("Connection string 'DefaultConnection' não foi configurada.");
+        _dataSource = dataSource;
     }
 
     public IDbConnection CreateConnection()
     {
-        return new NpgsqlConnection(_connectionString);
+        return _dataSource.CreateConnection();
     }
 }

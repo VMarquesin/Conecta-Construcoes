@@ -1,0 +1,467 @@
+import { useState, useEffect, useRef } from 'react'
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom'
+import { chatService, type ConversaResponse, type MensagemItemResponse } from '../features/cliente/services/chatService'
+import { useSession } from '../context/SessionContext'
+import { useToast } from '../core/hooks/useToast'
+import './Mensagens.css'
+
+export default function MensagensPage() {
+  const { id } = useParams<{ id?: string }>()
+  const location = useLocation()
+  const navigate = useNavigate()
+  const toast = useToast()
+  const { usuario, perfilAtivo } = useSession()
+
+  const stateContato = location.state as { contatoId?: number; nome?: string; foto?: string } | undefined
+
+  const isPrestador = perfilAtivo === 'PRESTADOR'
+  const basePath = isPrestador ? '/pro/mensagens' : '/mensagens'
+  const usuarioIdNum = usuario ? (typeof usuario.id === 'string' ? parseInt(usuario.id, 10) : usuario.id) : undefined
+
+  const [conversas, setConversas] = useState<ConversaResponse[]>([])
+  const [loadingConversas, setLoadingConversas] = useState(true)
+  const [busca, setBusca] = useState('')
+
+  // Conversa ativa selecionada
+  const [conversaAtiva, setConversaAtiva] = useState<ConversaResponse | null>(null)
+  const [mensagens, setMensagens] = useState<MensagemItemResponse[]>([])
+  const [loadingMensagens, setLoadingMensagens] = useState(false)
+  const [novoTexto, setNovoTexto] = useState('')
+  const [enviando, setEnviando] = useState(false)
+
+  const chatScrollRef = useRef<HTMLDivElement>(null)
+
+  // 1. Carrega todas as conversas ativas do usuário ao montar ou mudar perfil/id/state
+  useEffect(() => {
+    const token =
+      localStorage.getItem('conecta.token') ||
+      localStorage.getItem('token') ||
+      localStorage.getItem('conecta_token') ||
+      localStorage.getItem('conecta.jwt')
+
+    if (!token || !usuario?.id) {
+      setConversas([])
+      setLoadingConversas(false)
+      return
+    }
+
+    let cancel = false
+    setLoadingConversas(true)
+    chatService
+      .listarConversas(perfilAtivo, usuarioIdNum)
+      .then(async (data) => {
+        if (cancel) return
+
+        let lista = Array.isArray(data) ? [...data] : []
+        let conversaSelecionada: ConversaResponse | null = null
+
+        // Se veio contato via state (ex: clique no botão Chat do prestador)
+        if (stateContato?.contatoId || stateContato?.nome) {
+          const foundByState = lista.find((c) =>
+            (stateContato.contatoId && (
+              c.clienteId === stateContato.contatoId ||
+              c.prestadorId === stateContato.contatoId ||
+              String(c.conversaId || c.id) === String(stateContato.contatoId)
+            )) ||
+            (stateContato.nome && c.nome && c.nome.toLowerCase() === stateContato.nome.toLowerCase())
+          )
+
+          if (foundByState) {
+            conversaSelecionada = {
+              ...foundByState,
+              nome: stateContato.nome || foundByState.nome,
+              avatar: stateContato.foto || foundByState.avatar
+            }
+          } else {
+            // Tenta obter ou iniciar a conversa no backend
+            try {
+              const prestadorId = isPrestador ? (usuarioIdNum || 0) : (stateContato.contatoId || 0)
+              const clienteId = isPrestador ? (stateContato.contatoId || 0) : (usuarioIdNum || 0)
+              if (prestadorId > 0 && clienteId > 0) {
+                const resp = await chatService.iniciarConversa({ prestadorId, clienteId })
+                if (resp && (resp.conversaId || resp.id)) {
+                  const convResolvida: ConversaResponse = {
+                    ...resp,
+                    nome: stateContato.nome || resp.nome,
+                    avatar: stateContato.foto || resp.avatar
+                  }
+                  lista = [convResolvida, ...lista]
+                  conversaSelecionada = convResolvida
+                }
+              }
+            } catch {
+              // Em caso de falha de rede/API, sintetiza a conversa localmente
+            }
+
+            if (!conversaSelecionada) {
+              const novaConversa: ConversaResponse = {
+                id: `temp-${stateContato.contatoId || Date.now()}`,
+                conversaId: 0,
+                prestadorId: isPrestador ? (usuarioIdNum || 0) : (stateContato.contatoId || 0),
+                clienteId: isPrestador ? (stateContato.contatoId || 0) : (usuarioIdNum || 0),
+                nome: stateContato.nome || (isPrestador ? 'Cliente' : 'Profissional'),
+                profissao: isPrestador ? 'Cliente Conecta' : 'Prestador Verificado',
+                avatar: stateContato.foto || '',
+                online: true,
+                statusTexto: 'Online agora • Responde rápido',
+                naoLida: false,
+                ultimaMensagem: 'Conversa iniciada',
+                tempo: 'Agora',
+                mensagens: []
+              }
+              lista = [novaConversa, ...lista]
+              conversaSelecionada = novaConversa
+            }
+          }
+        } else if (id) {
+          const found = lista.find((c) =>
+            String(c.conversaId || c.id) === String(id) ||
+            String(c.prestadorId) === String(id) ||
+            String(c.clienteId) === String(id)
+          )
+          if (found) conversaSelecionada = found
+        } else if (lista.length > 0) {
+          if (window.innerWidth > 768) {
+            conversaSelecionada = lista[0]
+          }
+        }
+
+        setConversas(lista)
+        if (conversaSelecionada) {
+          setConversaAtiva(conversaSelecionada)
+        }
+      })
+      .catch((err) => console.error('Erro ao listar conversas:', err))
+      .finally(() => {
+        if (!cancel) setLoadingConversas(false)
+      })
+
+    return () => {
+      cancel = true
+    }
+  }, [id, perfilAtivo, usuarioIdNum, stateContato?.contatoId, stateContato?.nome])
+
+  // 2. Quando mudar a conversa ativa, faz GET /api/v1/conversas/{id}/mensagens e carrega histórico real
+  useEffect(() => {
+    if (!conversaAtiva) {
+      setMensagens([])
+      return
+    }
+
+    const conversaId = conversaAtiva.conversaId || Number(conversaAtiva.id)
+    if (!conversaId || isNaN(conversaId) || conversaId === 0) {
+      setMensagens([])
+      setLoadingMensagens(false)
+      return
+    }
+
+    let cancel = false
+    setLoadingMensagens(true)
+
+    chatService
+      .listarMensagens(conversaId)
+      .then((data) => {
+        if (!cancel) {
+          setMensagens(data || [])
+        }
+      })
+      .catch((err) => {
+        console.error(`Erro ao carregar mensagens da conversa #${conversaId}:`, err)
+        if (!cancel) setMensagens([])
+      })
+      .finally(() => {
+        if (!cancel) setLoadingMensagens(false)
+      })
+
+    return () => {
+      cancel = true
+    }
+  }, [conversaAtiva?.conversaId, conversaAtiva?.id])
+
+  // Scroll para o fim sempre que chegar nova mensagem
+  useEffect(() => {
+    chatScrollRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [mensagens, loadingMensagens])
+
+  // 3. Ao enviar mensagem: POST na API aguardando retorno 200/201 antes de consolidar no array
+  const handleEnviar = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!novoTexto.trim() || !conversaAtiva || enviando) return
+
+    const texto = novoTexto.trim()
+    let conversaId = conversaAtiva.conversaId || Number(conversaAtiva.id)
+
+    setEnviando(true)
+
+    try {
+      if (!conversaId || isNaN(conversaId) || conversaId === 0) {
+        const prestadorId = conversaAtiva.prestadorId || (isPrestador ? (usuarioIdNum || 0) : 0)
+        const clienteId = conversaAtiva.clienteId || (isPrestador ? 0 : (usuarioIdNum || 0))
+        const resp = await chatService.iniciarConversa({ prestadorId, clienteId })
+        conversaId = resp.conversaId || Number(resp.id)
+        setConversaAtiva((prev) => (prev ? { ...prev, conversaId, id: String(conversaId) } : prev))
+        setConversas((prev) =>
+          prev.map((c) =>
+            c.id === conversaAtiva.id ? { ...c, conversaId, id: String(conversaId) } : c
+          )
+        )
+      }
+
+      const msgRetornada = await chatService.enviarMensagem(conversaId, {
+        texto,
+        remetente: isPrestador ? 'prestador' : 'usuario',
+        remetenteId: usuarioIdNum
+      })
+      // Sucesso garantido da API
+      setMensagens((prev) => [...prev, msgRetornada])
+      setNovoTexto('')
+
+      // Atualiza o snippet da conversa na lista lateral
+      setConversas((prev) =>
+        prev.map((c) =>
+          c.id === conversaAtiva.id || c.conversaId === conversaId
+            ? { ...c, ultimaMensagem: texto, tempo: 'Agora' }
+            : c
+        )
+      )
+    } catch (err: any) {
+      console.error('Erro ao enviar mensagem:', err)
+      toast.error(err.message || 'Erro ao enviar a mensagem.')
+    } finally {
+      setEnviando(false)
+    }
+  }
+
+  const conversasFiltradas = conversas.filter((c) => {
+    if (!busca.trim()) return true
+    const termo = busca.toLowerCase()
+    return (
+      (c.nome && c.nome.toLowerCase().includes(termo)) ||
+      (c.profissao && c.profissao.toLowerCase().includes(termo)) ||
+      (c.ultimaMensagem && c.ultimaMensagem.toLowerCase().includes(termo))
+    )
+  })
+
+  return (
+    <div className="mensagens-page">
+      {/* 1. Barra Lateral com as Conversas */}
+      <aside className={`mensagens-sidebar ${conversaAtiva ? 'hide-mobile' : ''}`}>
+        <div className="mensagens-sidebar-header">
+          <h2 className="mensagens-sidebar-title">Mensagens</h2>
+          <div className="mensagens-search-box">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2.2">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input
+              type="text"
+              className="mensagens-search-input"
+              placeholder="Pesquisar conversas..."
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className="mensagens-list">
+          {loadingConversas ? (
+            <div style={{ padding: '30px 20px', textAlign: 'center', color: '#64748b' }}>
+              <p>Carregando conversas...</p>
+            </div>
+          ) : conversasFiltradas.length === 0 ? (
+            <div style={{ padding: '40px 20px', textAlign: 'center', color: '#64748b' }}>
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.5" style={{ margin: '0 auto 10px' }}>
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+              <h4 style={{ margin: '0 0 4px', color: '#1e293b' }}>Nenhuma conversa</h4>
+              <p style={{ fontSize: '13px', margin: 0 }}>
+                Suas mensagens com {isPrestador ? 'clientes' : 'profissionais'} aparecerão aqui.
+              </p>
+            </div>
+          ) : (
+            conversasFiltradas.map((conv) => {
+              const isSelected =
+                conversaAtiva &&
+                (conversaAtiva.id === conv.id || conversaAtiva.conversaId === conv.conversaId)
+
+              return (
+                <div
+                  key={conv.id || conv.conversaId}
+                  className={`conversa-item ${isSelected ? 'active' : ''}`}
+                  onClick={() => {
+                    setConversaAtiva(conv)
+                    navigate(`${basePath}/${conv.conversaId || conv.id}`, { replace: true })
+                  }}
+                >
+                  <div className="conversa-avatar-wrap">
+                    {conv.avatar ? (
+                      <img src={conv.avatar} alt={conv.nome} className="conversa-avatar" />
+                    ) : (
+                      <div className="conversa-avatar-placeholder">
+                        {conv.nome ? conv.nome[0].toUpperCase() : isPrestador ? 'C' : 'P'}
+                      </div>
+                    )}
+                    {conv.online && <span className="conversa-online-dot" title="Online" />}
+                  </div>
+
+                  <div className="conversa-info">
+                    <div className="conversa-top-row">
+                      <span className="conversa-name">{conv.nome || (isPrestador ? 'Cliente' : 'Profissional')}</span>
+                      <span className="conversa-time">{conv.tempo}</span>
+                    </div>
+                    <div className="conversa-sub-row">
+                      <p className="conversa-snippet">
+                        {conv.ultimaMensagem || conv.profissao || 'Iniciar conversa'}
+                      </p>
+                      {conv.naoLida && <span className="conversa-unread-pill" />}
+                    </div>
+                  </div>
+                </div>
+              )
+            })
+          )}
+        </div>
+      </aside>
+
+      {/* 2. Painel Central com o Histórico e Input de Chat */}
+      <section className={`mensagens-chat-panel ${!conversaAtiva ? 'hide-mobile' : ''}`}>
+        {conversaAtiva ? (
+          <>
+            {/* Topo do Chat */}
+            <div className="chat-panel-header">
+              <div className="chat-panel-header-left">
+                <button
+                  type="button"
+                  className="client-icon-btn"
+                  onClick={() => setConversaAtiva(null)}
+                  title="Voltar às conversas"
+                  style={{ display: window.innerWidth <= 768 ? 'flex' : 'none' }}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <line x1="19" y1="12" x2="5" y2="12" />
+                    <polyline points="12 19 5 12 12 5" />
+                  </svg>
+                </button>
+
+                <div className="conversa-avatar-wrap" style={{ width: '42px', height: '42px' }}>
+                  {conversaAtiva.avatar ? (
+                    <img src={conversaAtiva.avatar} alt={conversaAtiva.nome} className="conversa-avatar" />
+                  ) : (
+                    <div className="conversa-avatar-placeholder">
+                      {conversaAtiva.nome ? conversaAtiva.nome[0].toUpperCase() : isPrestador ? 'C' : 'P'}
+                    </div>
+                  )}
+                  {conversaAtiva.online && <span className="conversa-online-dot" />}
+                </div>
+
+                <div>
+                  <div className="chat-panel-prof-name">
+                    <span>{conversaAtiva.nome}</span>
+                    {!isPrestador && (
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="#0056D6">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M8 12l2.5 2.5L16 9" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    )}
+                  </div>
+                  <p className="chat-panel-prof-role">
+                    {conversaAtiva.profissao || (isPrestador ? 'Cliente' : 'Prestador Verificado')}
+                  </p>
+                </div>
+              </div>
+
+              <div className="chat-panel-header-actions">
+                {!isPrestador && conversaAtiva.prestadorId && (
+                  <Link
+                    to={`/prestador/${conversaAtiva.prestadorId}`}
+                    className="chat-panel-btn"
+                    title="Ver perfil completo do profissional"
+                  >
+                    Ver Perfil
+                  </Link>
+                )}
+                {conversaAtiva.pedidoNumero && (
+                  <Link
+                    to={isPrestador ? '/pro' : `/pedidos/${conversaAtiva.pedidoNumero}`}
+                    className="chat-panel-btn"
+                    style={{ background: '#f8fafc', color: '#334155', borderColor: '#e2e8f0' }}
+                  >
+                    Pedido #{conversaAtiva.pedidoNumero}
+                  </Link>
+                )}
+              </div>
+            </div>
+
+            {/* Mensagens com scroll automático */}
+            <div className="chat-messages-container">
+              {loadingMensagens ? (
+                <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
+                  <p>Carregando histórico de mensagens...</p>
+                </div>
+              ) : mensagens.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '60px 20px', color: '#64748b' }}>
+                  <p>Nenhuma mensagem trocada ainda.</p>
+                  <p style={{ fontSize: '13px' }}>
+                    Diga olá para {conversaAtiva.nome} e tire dúvidas sobre o serviço!
+                  </p>
+                </div>
+              ) : (
+                mensagens.map((m) => {
+                  const isMinhaMensagem = m.remetenteId
+                    ? String(m.remetenteId) === String(usuario?.id)
+                    : isPrestador
+                    ? m.remetente === 'prestador'
+                    : m.remetente === 'usuario'
+
+                  return (
+                    <div
+                      key={m.id}
+                      className={`msg-bubble ${isMinhaMensagem ? 'usuario' : 'prestador'}`}
+                    >
+                      {m.texto && <div>{m.texto}</div>}
+                      {m.hora && <span className="msg-time">{m.hora}</span>}
+                    </div>
+                  )
+                })
+              )}
+              <div ref={chatScrollRef} />
+            </div>
+
+            {/* Barra de envio de mensagem */}
+            <form className="chat-input-bar" onSubmit={handleEnviar}>
+              <input
+                type="text"
+                className="chat-input-field"
+                placeholder={`Mensagem para ${conversaAtiva.nome}...`}
+                value={novoTexto}
+                onChange={(e) => setNovoTexto(e.target.value)}
+                disabled={enviando}
+              />
+              <button
+                type="submit"
+                className="chat-send-btn"
+                disabled={!novoTexto.trim() || enviando}
+                title="Enviar mensagem"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <line x1="22" y1="2" x2="11" y2="13" />
+                  <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                </svg>
+              </button>
+            </form>
+          </>
+        ) : (
+          <div className="chat-empty-panel">
+            <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5" style={{ marginBottom: '16px' }}>
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+            <h3 style={{ margin: '0 0 8px', color: '#1e293b' }}>Suas Conversas</h3>
+            <p style={{ maxWidth: '360px', margin: 0, fontSize: '14px', lineHeight: '1.5' }}>
+              Selecione uma conversa ao lado para ver o histórico de mensagens e negociar orçamentos diretamente {isPrestador ? 'com o cliente' : 'com o prestador'}.
+            </p>
+          </div>
+        )}
+      </section>
+    </div>
+  )
+}

@@ -1,6 +1,537 @@
-﻿// MeusPedidos.tsx - Pagina de listagem de pedidos do usuario
-const MeusPedidos = () => {
-  return <div>Meus Pedidos</div>;
-};
+import { useState, useEffect } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { useChat } from '../context/ChatContext'
+import { useToast } from '../core/hooks/useToast'
+import AccountTrigger from '../components/session/AccountTrigger'
+import { pedidoService, type PedidoResumoResponse } from '../features/cliente/services/pedidoService'
+import { solicitacaoService } from '../features/cliente/services/solicitacaoService'
+import { chatService } from '../features/cliente/services/chatService'
+import './MeusPedidos.css'
 
-export default MeusPedidos;
+export default function MeusPedidos() {
+  const navigate = useNavigate()
+  const { abrirChat } = useChat()
+  const toast = useToast()
+  const [pedidos, setPedidos] = useState<PedidoResumoResponse[]>([])
+  const [loading, setLoading] = useState(true)
+  const [abaAtiva, setAbaAtiva] = useState<'pendente' | 'aceito' | 'concluido' | 'cancelado'>('pendente')
+  const [pedidoSelecionado, setPedidoSelecionado] = useState<PedidoResumoResponse | null>(null)
+
+  const carregarPedidos = () => {
+    setLoading(true)
+    pedidoService
+      .listarMeusPedidos()
+      .then((data) => {
+        const unique = Array.isArray(data)
+          ? Array.from(new Map(data.map((item) => [item.id, item])).values())
+          : []
+        setPedidos(unique)
+      })
+      .catch((err) => {
+        console.error('Erro ao listar pedidos:', err)
+        setPedidos([])
+      })
+      .finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    carregarPedidos()
+  }, [])
+
+  // 1. Concluídos: Exibe pedidos estritamente finalizados (prioridade máxima)
+  const isConcluido = (p: PedidoResumoResponse) => {
+    const s = (p.status || '').toUpperCase()
+    return s === 'CONCLUIDA' || s === 'CONCLUIDO' || s === 'FINALIZADO'
+  }
+
+  // 2. Cancelados: Exibe pedidos cancelados ou recusados
+  const isCancelado = (p: PedidoResumoResponse) => {
+    const s = (p.status || '').toUpperCase()
+    return (s === 'CANCELADO' || s === 'CANCELADA' || s === 'RECUSADO' || s === 'RECUSADA') && !isConcluido(p)
+  }
+
+  // 3. Aceitos / Em Andamento: Exibe pedidos em execução ou agendados
+  const isAceito = (p: PedidoResumoResponse) => {
+    const s = (p.status || '').toUpperCase()
+    return (s === 'ACEITA' || s === 'ACEITO' || s === 'EM_ANDAMENTO' || s === 'AGENDADO' || s === 'EM_EXECUCAO') && !isConcluido(p) && !isCancelado(p)
+  }
+
+  const isAguardandoAceite = (p: PedidoResumoResponse) => {
+    const s = (p.status || '').toUpperCase()
+    return (s === 'AGUARDANDO_ACEITE' || s === 'PROPOSTA_RECEBIDA') && !isCancelado(p) && !isConcluido(p) && !isAceito(p)
+  }
+
+  // 4. Pendentes: Exibe pedidos abertos aguardando propostas ou aceite do cliente
+  const isPendente = (p: PedidoResumoResponse) => {
+    const s = (p.status || '').toUpperCase()
+    return (s === 'PENDENTE' || s === 'ABERTA' || s === 'AGUARDANDO_PROPOSTA' || s === 'AGUARDANDO_ACEITE' || s === 'PROPOSTA_RECEBIDA') && !isConcluido(p) && !isCancelado(p) && !isAceito(p)
+  }
+
+  const numPendentes = pedidos.filter(isPendente).length
+  const numAceitos = pedidos.filter(isAceito).length
+  const numConcluidos = pedidos.filter(isConcluido).length
+  const numCancelados = pedidos.filter(isCancelado).length
+
+  const pedidosFiltrados = pedidos.filter((p) => {
+    if (abaAtiva === 'pendente') return isPendente(p)
+    if (abaAtiva === 'aceito') return isAceito(p)
+    if (abaAtiva === 'concluido') return isConcluido(p)
+    if (abaAtiva === 'cancelado') return isCancelado(p)
+    return true
+  })
+
+  const handleCancelar = async (pedido: PedidoResumoResponse) => {
+    const nome = pedido.prestadorNome || 'o profissional'
+    if (confirm(`Deseja realmente cancelar este pedido com ${nome}?`)) {
+      try {
+        const s = (pedido.status || '').toUpperCase()
+        if (s === 'ABERTA' || s === 'AGUARDANDO_PROPOSTA') {
+          await solicitacaoService.cancelarSolicitacao(pedido.id)
+        } else {
+          await pedidoService.cancelarPedido(pedido.id)
+        }
+
+        // Integração Chat: Envia mensagem automática no chat
+        if (pedido.prestadorId > 0) {
+          try {
+            const conversa = await chatService.iniciarConversa(pedido.prestadorId, pedido.id)
+            const conversaId = conversa.conversaId || Number(conversa.id)
+            if (conversaId > 0) {
+              await chatService.enviarMensagem(conversaId, {
+                texto: 'A solicitação de orçamento foi cancelada pelo cliente.',
+              })
+            }
+          } catch (chatErr) {
+            console.warn('Não foi possível enviar mensagem automática no chat:', chatErr)
+          }
+        }
+
+        toast.success('Pedido cancelado com sucesso.')
+        carregarPedidos()
+      } catch (err: any) {
+        console.error('Erro ao cancelar pedido:', err)
+        toast.error(err.message || 'Erro ao cancelar o pedido.')
+      }
+    }
+  }
+
+  return (
+    <div className="pedidos-viewport">
+      <div className="pedidos-container">
+        {/* Conteúdo Principal */}
+        <main className="pedidos-main">
+          {/* Título e Ação de Ajuda */}
+          <div className="pedidos-title-row">
+            <div className="pedidos-titles">
+              <h1 className="pedidos-page-title">Meus Pedidos</h1>
+              <p className="pedidos-page-subtitle">Acompanhe seus serviços e orçamentos em tempo real</p>
+            </div>
+
+            <button
+              className="pedidos-support-btn"
+              title="Central de Ajuda e Suporte aos Pedidos"
+              onClick={() => toast.info('Abrindo canal direto de suporte ao cliente...')}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
+                <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Abas de Status do Pedido */}
+          <div className="pedidos-tabs-bar">
+            <button
+              className={`tab-btn ${abaAtiva === 'pendente' ? 'active' : ''}`}
+              onClick={() => setAbaAtiva('pendente')}
+            >
+              <span>Pendentes</span>
+              <span className="tab-badge amber">{numPendentes}</span>
+            </button>
+
+            <button
+              className={`tab-btn ${abaAtiva === 'aceito' ? 'active' : ''}`}
+              onClick={() => setAbaAtiva('aceito')}
+            >
+              <span>Aceitos</span>
+              <span className="tab-badge blue">{numAceitos}</span>
+            </button>
+
+            <button
+              className={`tab-btn ${abaAtiva === 'concluido' ? 'active' : ''}`}
+              onClick={() => setAbaAtiva('concluido')}
+            >
+              <span>Concluídos</span>
+              <span className="tab-badge green">{numConcluidos}</span>
+            </button>
+
+            <button
+              className={`tab-btn ${abaAtiva === 'cancelado' ? 'active' : ''}`}
+              onClick={() => setAbaAtiva('cancelado')}
+            >
+              <span>Cancelados</span>
+              <span className="tab-badge gray">{numCancelados}</span>
+            </button>
+          </div>
+
+          {/* Banner Garantia Conecta Protege */}
+          <div className="pedidos-protege-banner">
+            <div className="protege-blue-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z" />
+              </svg>
+            </div>
+            <div className="protege-banner-texts">
+              <h4 className="protege-banner-title">Garantia Conecta Protege</h4>
+              <p className="protege-banner-sub">
+                Pagamento retido com total segurança até a finalização do serviço.
+              </p>
+            </div>
+          </div>
+
+          {/* Lista de Pedidos Filtrados */}
+          <div className="pedidos-cards-grid">
+            {loading ? (
+              <div style={{ textAlign: 'center', padding: '60px 20px', color: '#64748b', gridColumn: '1 / -1' }}>
+                <p>Carregando seus pedidos...</p>
+              </div>
+            ) : pedidosFiltrados.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '60px 20px', color: '#64748b', gridColumn: '1 / -1' }}>
+                <h3>Nenhum pedido nesta categoria</h3>
+                <p>Quando você solicitar novos orçamentos, eles aparecerão aqui.</p>
+                <Link
+                  to="/busca"
+                  className="btn-detalhes-pedido"
+                  style={{ display: 'inline-flex', marginTop: '14px', textDecoration: 'none', padding: '0 20px' }}
+                >
+                  Buscar Prestadores
+                </Link>
+              </div>
+            ) : (
+              pedidosFiltrados.map((pedido) => (
+                <article key={pedido.id} className="pedido-card">
+                  {/* Linha do Prestador */}
+                  <div className="pedido-prof-header">
+                    <div className="pedido-prof-left">
+                      <div className="pedido-prof-avatar-wrap">
+                        {pedido.prestadorAvatar ? (
+                          <img
+                            src={pedido.prestadorAvatar}
+                            alt={pedido.prestadorNome}
+                            className="pedido-prof-avatar-img"
+                          />
+                        ) : (
+                          <div className="pedido-prof-avatar-img" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0056D6', color: '#fff' }}>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                              <circle cx="12" cy="7" r="4" />
+                            </svg>
+                          </div>
+                        )}
+                        <span className="pedido-prof-check">
+                          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        </span>
+                      </div>
+
+                      <div className="pedido-prof-info">
+                        <h3 className="pedido-prof-name">
+                          <span>{pedido.prestadorNome}</span>
+                        </h3>
+                        <p className="pedido-prof-service">{pedido.prestadorProfissao}</p>
+                        <span className="pedido-prof-time">{pedido.solicitadoEm}</span>
+                      </div>
+                    </div>
+
+                    <span
+                      className={`pedido-status-pill ${
+                        isCancelado(pedido)
+                          ? 'status-cancelado'
+                          : isPendente(pedido)
+                          ? 'status-pendente'
+                          : isAceito(pedido)
+                          ? 'status-aceito'
+                          : 'status-concluido'
+                      }`}
+                    >
+                      {isCancelado(pedido) && '✕ '}
+                      {isPendente(pedido) && '⏳ '}
+                      {isAceito(pedido) && '✓ '}
+                      {isConcluido(pedido) && '★ '}
+                      {isCancelado(pedido) ? 'Cancelado' : pedido.statusTexto}
+                    </span>
+                  </div>
+
+                  {/* Balão com Resumo do Serviço */}
+                  <div className="pedido-details-bubble">
+                    <h4 className="pedido-details-title">{pedido.tituloServico}</h4>
+                    <p className="pedido-details-desc">{pedido.descricaoServico}</p>
+                  </div>
+
+                  {/* Preço e Dica de Status */}
+                  <div className="pedido-price-row">
+                    <div className="pedido-price-left">
+                      <span className="pedido-price-hint">{pedido.valorLabel}</span>
+                      <span className={`pedido-price-val ${!pedido.valorIsPreco ? 'neutral' : ''}`}>
+                        {pedido.valorTexto}
+                      </span>
+                    </div>
+
+                    <span className="pedido-status-hint">
+                      {pedido.dicaIcone === 'clock' && (
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <circle cx="12" cy="12" r="10" />
+                          <polyline points="12 6 12 12 16 14" />
+                        </svg>
+                      )}
+                      {pedido.dicaIcone === 'truck' && (
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <rect x="1" y="3" width="15" height="13" />
+                          <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
+                          <circle cx="5.5" cy="18.5" r="2.5" />
+                          <circle cx="18.5" cy="18.5" r="2.5" />
+                        </svg>
+                      )}
+                      {pedido.dicaIcone === 'calendar' && (
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                          <line x1="16" y1="2" x2="16" y2="6" />
+                          <line x1="8" y1="2" x2="8" y2="6" />
+                          <line x1="3" y1="10" x2="21" y2="10" />
+                        </svg>
+                      )}
+                      {pedido.dicaIcone === 'check' && (
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      )}
+                      <span>{isAguardandoAceite(pedido) ? 'Proposta recebida' : (pedido.statusDica || 'Aguardando proposta')}</span>
+                    </span>
+                  </div>
+
+                  {/* Ações do Card */}
+                  <div className="pedido-card-actions">
+                    {isCancelado(pedido) ? (
+                      <span className="badge-cancelado-tag">✕ Pedido Cancelado</span>
+                    ) : (
+                      <div style={{ display: 'flex', gap: '8px', width: '100%', flexWrap: 'wrap' }}>
+                        {/* Se o prestador enviou proposta: botão principal "Ver Proposta / Aceitar" */}
+                        {isAguardandoAceite(pedido) && (
+                          <button
+                            className="btn-detalhes-pedido"
+                            onClick={() => navigate(`/pedidos/${pedido.id}`)}
+                            style={{
+                              flex: 1.2,
+                              background: '#0056D6',
+                              color: '#ffffff',
+                              border: 'none',
+                              boxShadow: '0 4px 12px rgba(0, 86, 214, 0.28)',
+                              fontWeight: 700,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '6px',
+                            }}
+                          >
+                            <span>Ver Proposta / Aceitar</span>
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                              <line x1="5" y1="12" x2="19" y2="12" />
+                              <polyline points="12 5 19 12 12 19" />
+                            </svg>
+                          </button>
+                        )}
+
+                        {/* Status pendentes: botão Cancelar Pedido */}
+                        {isPendente(pedido) && (
+                          <button
+                            className="btn-cancelar-pedido"
+                            onClick={() => handleCancelar(pedido)}
+                            style={{ flex: isAguardandoAceite(pedido) ? 1 : undefined }}
+                          >
+                            Cancelar Pedido
+                          </button>
+                        )}
+
+                        {/* Botão Ver Detalhes: só renderiza quando ACEITA ou CONCLUIDA */}
+                        {(isAceito(pedido) || isConcluido(pedido)) && (
+                          <button
+                            className="btn-detalhes-pedido"
+                            onClick={() => navigate(`/pedidos/${pedido.id}`)}
+                          >
+                            <span>Ver Detalhes</span>
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                              <line x1="5" y1="12" x2="19" y2="12" />
+                              <polyline points="12 5 19 12 12 19" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </article>
+              ))
+            )}
+          </div>
+        </main>
+
+        {/* Modal de Detalhes do Pedido */}
+        {pedidoSelecionado && (
+          <div
+            style={{
+              position: 'fixed',
+              inset: 0,
+              backgroundColor: 'rgba(15, 23, 42, 0.6)',
+              backdropFilter: 'blur(4px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 100,
+              padding: '20px',
+            }}
+          >
+            <div
+              style={{
+                background: '#ffffff',
+                borderRadius: '24px',
+                maxWidth: '520px',
+                width: '100%',
+                padding: '28px',
+                boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '18px',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h3 style={{ margin: 0, fontSize: '20px', fontWeight: 800 }}>Detalhes do Pedido</h3>
+                <button
+                  onClick={() => setPedidoSelecionado(null)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px' }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '12px', background: '#f8fafc', borderRadius: '14px' }}>
+                <img
+                  src={pedidoSelecionado.prestadorAvatar}
+                  alt={pedidoSelecionado.prestadorNome}
+                  style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover' }}
+                />
+                <div>
+                  <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 700 }}>{pedidoSelecionado.prestadorNome}</h4>
+                  <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>{pedidoSelecionado.prestadorProfissao}</p>
+                </div>
+              </div>
+
+              <div>
+                <span style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Serviço Solicitado</span>
+                <h4 style={{ margin: '4px 0 6px', fontSize: '16px', fontWeight: 800 }}>{pedidoSelecionado.tituloServico}</h4>
+                <p style={{ margin: 0, fontSize: '14px', color: '#475569', lineHeight: 1.5 }}>
+                  {pedidoSelecionado.descricaoServico}
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '14px', background: '#eff6ff', borderRadius: '12px' }}>
+                <div>
+                  <span style={{ fontSize: '12px', color: '#64748b' }}>{pedidoSelecionado.valorLabel}</span>
+                  <div style={{ fontSize: '18px', fontWeight: 800, color: '#0056d6' }}>{pedidoSelecionado.valorTexto}</div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <span style={{ fontSize: '12px', color: '#64748b' }}>Status Atual</span>
+                  <div style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>{pedidoSelecionado.statusTexto}</div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '6px' }}>
+                <button
+                  onClick={() => {
+                    navigate(`/prestador/${pedidoSelecionado.prestadorId}`)
+                    setPedidoSelecionado(null)
+                  }}
+                  style={{
+                    padding: '10px 18px',
+                    borderRadius: '10px',
+                    border: '1px solid #cbd5e1',
+                    background: '#f8fafc',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Ver Perfil do Prestador
+                </button>
+                <button
+                  onClick={() => {
+                    abrirChat(pedidoSelecionado.prestadorId)
+                    setPedidoSelecionado(null)
+                  }}
+                  style={{
+                    padding: '10px 20px',
+                    borderRadius: '10px',
+                    border: 'none',
+                    background: '#0056d6',
+                    color: '#ffffff',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Conversar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Rodapé Desktop */}
+        <footer className="home-desktop-footer">
+          <div className="footer-inner">
+            <span>© 2026 Conecta Construções - Todos os direitos reservados.</span>
+            <div className="footer-links">
+              <Link to="/">Início</Link>
+              <Link to="/busca">Buscar Serviços</Link>
+              <Link to="/pedidos">Meus Pedidos</Link>
+            </div>
+          </div>
+        </footer>
+
+        {/* Barra de Navegação Inferior (Mobile Viewport) */}
+        <nav className="home-bottom-nav">
+          <Link to="/" className="nav-item">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+              <polyline points="9 22 9 12 15 12 15 22" />
+            </svg>
+            <span>Início</span>
+          </Link>
+
+          <Link to="/busca" className="nav-item">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <span>Buscar</span>
+          </Link>
+
+          <Link to="/pedidos" className="nav-item active">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="16" y1="13" x2="8" y2="13" />
+              <line x1="16" y1="17" x2="8" y2="17" />
+            </svg>
+            <span>Pedidos</span>
+          </Link>
+
+          <AccountTrigger className="nav-item" title="Minha conta">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+            <span>Perfil</span>
+          </AccountTrigger>
+        </nav>
+      </div>
+    </div>
+  )
+}

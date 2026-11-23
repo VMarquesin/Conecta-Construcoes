@@ -1,0 +1,182 @@
+.cadastro-viewport {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: radial-gradient(circle at 20% 10%, #dbeafe, transparent 45%), linear-gradient(160deg, #0a3d8f, #0f172a);
+}
+
+.cadastro-card {
+  width: 100%;
+  max-width: 480px;
+  background: #fff;
+  border-radius: 24px;
+  padding: 32px;
+  box-shadow: 0 30px 70px rgba(2, 6, 23, 0.45);
+}
+
+.cadastro-brand {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.cadastro-logo {
+  display: inline-grid;
+  place-items: center;
+  width: 50px;
+  height: 50px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #0a4fb0, #1d7ae8);
+  color: #fff;
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.cadastro-brand h1 {
+  margin: 10px 0 2px;
+  font-size: 22px;
+  color: #0f172a;
+}
+
+.cadastro-brand p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.cadastro-steps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.cadastro-step-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #94a3b8;
+}
+
+.cadastro-step-item.active {
+  color: #0a4fb0;
+}
+
+.cadastro-step-num {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  font-size: 11px;
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.cadastro-step-item.active .cadastro-step-num {
+  background: #0a4fb0;
+  color: #fff;
+}
+
+.cadastro-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.cadastro-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.cadastro-field span {
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.cadastro-field input {
+  padding: 10px 12px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.cadastro-field input:focus {
+  border-color: #0a4fb0;
+  box-shadow: 0 0 0 3px rgba(10, 79, 176, 0.15);
+}
+
+.cadastro-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.cadastro-error {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+.cadastro-success {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  padding: 16px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.cadastro-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.cadastro-btn {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  color: #fff;
+  background: #0a4fb0;
+  transition: transform 0.12s, filter 0.12s;
+}
+
+.cadastro-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.08);
+}
+
+.cadastro-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.cadastro-btn-secondary {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.cadastro-btn-secondary:hover {
+  background: #e2e8f0;
+  filter: none;
+}

@@ -320,6 +320,29 @@ CREATE TABLE IF NOT EXISTS proposta_itens (
 CREATE INDEX IF NOT EXISTS idx_proposta_itens_proposta_id ON proposta_itens(proposta_id);
 
 -- 14. EXPANSÃO: PEDIDOS
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 
+        FROM information_schema.columns 
+        WHERE table_name = 'pedidos' 
+          AND column_name = 'status' 
+          AND data_type = 'character varying'
+    ) THEN
+        ALTER TABLE pedidos 
+            ALTER COLUMN status DROP DEFAULT,
+            ALTER COLUMN status TYPE status_pedido USING (
+                CASE 
+                    WHEN status = 'PENDENTE' THEN 'AGUARDANDO_ACEITE'::status_pedido
+                    WHEN status = 'ACEITO' THEN 'AGENDADO'::status_pedido
+                    WHEN status = 'RECUSADO' THEN 'CANCELADO'::status_pedido
+                    ELSE status::status_pedido
+                END
+            ),
+            ALTER COLUMN status SET DEFAULT 'AGUARDANDO_ACEITE'::status_pedido;
+    END IF;
+END $$;
+
 ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS proposta_id INT;
 ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS endereco_id INT;
 ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS endereco_atendimento TEXT;

@@ -1,4 +1,20 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
+import Home from '../pages/Home'
+import Busca from '../pages/Busca'
+import PrestadorPerfil from '../pages/PrestadorPerfil'
+import MeusPedidos from '../pages/MeusPedidos'
+import PedidoDetalhe from '../pages/PedidoDetalhe'
+import ChatPedido from '../pages/ChatPedido'
+import ProDashboard from '../pages/pro/ProDashboard'
+import ProAnaliseSolicitacao from '../pages/pro/ProAnaliseSolicitacao'
+import ProServicos from '../pages/pro/ProServicos'
+import Login from '../pages/Login'
+import CadastroClientePage from '../features/cliente/pages/CadastroClientePage'
+import RequirePerfil from '../components/session/RequirePerfil'
+import { PERFIL_INFO, useSession } from '../context/SessionContext'
+import ClientLayout from '../core/layout/ClientLayout'
+import ProLayout from '../core/layout/ProLayout'
+import MensagensPage from '../pages/Mensagens'
 import AdminLayout from '../core/layout/AdminLayout'
 import AdminDashboard from '../pages/admin/AdminDashboard'
 import UsuariosLista from '../pages/admin/UsuariosLista'
@@ -9,18 +25,63 @@ import DocumentosPendentes from '../pages/admin/DocumentosPendentes'
 import Denuncias from '../pages/admin/Denuncias'
 
 export default function AppRoutes() {
+  const { perfilAtivo } = useSession()
+  const fallback = perfilAtivo ? PERFIL_INFO[perfilAtivo].home : '/login'
+
   return (
     <Routes>
-      <Route path="/admin" element={<AdminLayout />}>
-        <Route index element={<AdminDashboard />} />
-        <Route path="usuarios" element={<UsuariosLista />} />
-        <Route path="usuarios/:id" element={<UsuarioDetalhe />} />
-        <Route path="usuarios/:id/editar" element={<UsuarioEditar />} />
-        <Route path="usuarios/:id/roles" element={<UsuarioRoles />} />
-        <Route path="documentos" element={<DocumentosPendentes />} />
-        <Route path="denuncias" element={<Denuncias />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/cadastro" element={<CadastroClientePage />} />
+
+      {/* ===== Perfil CLIENTE ===== */}
+      <Route element={<RequirePerfil perfil="CLIENTE" />}>
+        <Route element={<ClientLayout />}>
+          <Route path="/" element={<Home />} />
+          <Route path="/inicio" element={<Home />} />
+          <Route path="/busca" element={<Busca />} />
+          <Route path="/pesquisa" element={<Busca />} />
+          <Route path="/prestador/:id" element={<PrestadorPerfil />} />
+          <Route path="/prestador" element={<PrestadorPerfil />} />
+          <Route path="/pedidos" element={<MeusPedidos />} />
+          <Route path="/meus-pedidos" element={<MeusPedidos />} />
+          <Route path="/pedidos/:id" element={<PedidoDetalhe />} />
+          <Route path="/pedido/:id" element={<PedidoDetalhe />} />
+          <Route path="/chat/:id" element={<ChatPedido />} />
+          <Route path="/chat" element={<ChatPedido />} />
+          <Route path="/mensagens/:id" element={<MensagensPage />} />
+          <Route path="/mensagens" element={<MensagensPage />} />
+        </Route>
       </Route>
-      <Route path="*" element={<Navigate to="/admin" replace />} />
+
+      {/* ===== Perfil PRESTADOR (Conecta PRO) ===== */}
+      <Route element={<RequirePerfil perfil="PRESTADOR" />}>
+        <Route element={<ProLayout />}>
+          <Route path="/pro" element={<ProDashboard />} />
+          <Route path="/pro/dashboard" element={<ProDashboard />} />
+          <Route path="/pro/servicos" element={<ProServicos />} />
+          <Route path="/pro/solicitacao/:id" element={<ProAnaliseSolicitacao />} />
+          <Route path="/pro/pedidos/:id/analisar" element={<ProAnaliseSolicitacao />} />
+          <Route path="/pro/portfolio" element={<PrestadorPerfil />} />
+          <Route path="/pro/portfolio/:id" element={<PrestadorPerfil />} />
+          <Route path="/pro/mensagens/:id" element={<MensagensPage />} />
+          <Route path="/pro/mensagens" element={<MensagensPage />} />
+        </Route>
+      </Route>
+
+      {/* ===== Perfil ADMIN ===== */}
+      <Route element={<RequirePerfil perfil="ADMIN" />}>
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<AdminDashboard />} />
+          <Route path="usuarios" element={<UsuariosLista />} />
+          <Route path="usuarios/:id" element={<UsuarioDetalhe />} />
+          <Route path="usuarios/:id/editar" element={<UsuarioEditar />} />
+          <Route path="usuarios/:id/roles" element={<UsuarioRoles />} />
+          <Route path="documentos" element={<DocumentosPendentes />} />
+          <Route path="denuncias" element={<Denuncias />} />
+        </Route>
+      </Route>
+
+      <Route path="*" element={<Navigate to={fallback} replace />} />
     </Routes>
   )
 }
