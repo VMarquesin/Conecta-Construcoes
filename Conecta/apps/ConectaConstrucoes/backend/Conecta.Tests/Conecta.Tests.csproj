@@ -23,6 +23,7 @@
     <ProjectReference Include="..\Conecta.Application\Conecta.Application.csproj" />
     <ProjectReference Include="..\Conecta.Domain\Conecta.Domain.csproj" />
     <ProjectReference Include="..\Conecta.Infrastructure\Conecta.Infrastructure.csproj" />
+    <ProjectReference Include="..\Conecta.API\Conecta.API.csproj" />
   </ItemGroup>
 
 </Project>

@@ -46,6 +46,8 @@ services:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
       ASPNETCORE_URLS: http://+:5000
       ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-monorepo_db};Username=${POSTGRES_USER:-admin};Password=${POSTGRES_PASSWORD:-admin123};
+    volumes:
+      - backend_uploads:/app/wwwroot/uploads
     depends_on:
       postgres:
         condition: service_healthy
@@ -69,6 +71,7 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  backend_uploads:
 
 networks:
   monorepo-network:

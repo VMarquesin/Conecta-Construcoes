@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Conecta.API.DTOs;
 using Conecta.Application.DTOs;
 using Conecta.Domain.Entidades;
 using Conecta.Domain.Interfaces;
@@ -31,16 +32,18 @@ public class PortfolioController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Upload(
-        [FromForm] IFormFile? file,
-        [FromForm] int? prestadorId = null,
-        [FromForm] string? titulo = null,
-        [FromForm] string? detalhe = null,
+        [FromForm] UploadPortfolioRequest request,
         [FromQuery] int? queryPrestadorId = null)
     {
-        if (file == null || file.Length == 0)
+        if (request?.File == null || request.File.Length == 0)
         {
             return BadRequest(new { mensagem = "Nenhum arquivo de imagem foi enviado." });
         }
+
+        var file = request.File;
+        var prestadorId = request.PrestadorId;
+        var titulo = request.Titulo;
+        var detalhe = request.Detalhe;
 
         // Obtém o PrestadorId via Claim ou parâmetro
         var claimId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
