@@ -123,7 +123,26 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// 8. Pipeline HTTP: Configuração do Swagger UI
+// 8. Pipeline HTTP: Configuração de Arquivos Estáticos, Swagger UI e Roteamento
+var wwwrootPath = Path.Combine(app.Environment.ContentRootPath, "wwwroot");
+if (!Directory.Exists(wwwrootPath))
+{
+    Directory.CreateDirectory(wwwrootPath);
+}
+var uploadsPath = Path.Combine(wwwrootPath, "uploads");
+if (!Directory.Exists(uploadsPath))
+{
+    Directory.CreateDirectory(uploadsPath);
+}
+app.Environment.WebRootPath = wwwrootPath;
+
+// Middleware de arquivos estáticos configurado explicitamente antes de UseRouting
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(wwwrootPath),
+    RequestPath = ""
+});
+
 if (app.Environment.IsDevelopment() || true) // Disponível para visualização e testes
 {
     app.UseSwagger();
@@ -133,21 +152,6 @@ if (app.Environment.IsDevelopment() || true) // Disponível para visualização 
         c.RoutePrefix = "swagger";
     });
 }
-
-// Garante que a pasta wwwroot existe para arquivos estáticos (upload de portfólio)
-var wwwrootPath = Path.Combine(builder.Environment.ContentRootPath, "wwwroot");
-if (!Directory.Exists(wwwrootPath))
-{
-    Directory.CreateDirectory(wwwrootPath);
-}
-
-// Middleware de arquivos estáticos configurado com PhysicalFileProvider explicitamente antes de UseRouting
-app.UseStaticFiles(new StaticFileOptions
-{
-    FileProvider = new PhysicalFileProvider(
-        Path.Combine(builder.Environment.ContentRootPath, "wwwroot")),
-    RequestPath = ""
-});
 
 app.UseRouting();
 
